@@ -18,7 +18,6 @@ SPIKE_OBJS:= libspike_main.a  libriscv.a  libdisasm.a  libsoftfloat.a  libfesvr.
 SPIKE_OBJS:=$(addprefix ${SPIKE_BUILD}/,${SPIKE_OBJS})
 LDFLAGS+=${SPIKE_OBJS}
 LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-
 LIBRARIES += -lpthread -ldl -lboost_regex -lboost_system -lpthread  -lboost_system -lboost_regex
 
 INCLUDE += -I$(realpath ${SPIKE}/riscv)
@@ -30,7 +29,7 @@ INCLUDE += -I/home/rawrr/Downloads/idea-IC-213.6777.52/jbr/include/linux
 
 
 
-CXXFLAGS += -Wno-unused-parameter -Wno-pedantic -Wno-unused-variable
+CXXFLAGS += -Wno-unused-parameter -Wno-pedantic -Wno-unused-variable -Wno-unused-function
 CXXFLAGS += -O0 -g3
 LDFLAGS += -O0 -g3
 
