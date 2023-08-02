@@ -82,9 +82,6 @@ u8& Memory::operator [](u32 address) {
     return *get(address);
 }
 
-/*T operator [](u32 address) const {
-    return get(address);
-}*/
 
 void Memory::loadHex(std::string path) {
     FILE *fp = fopen(&path[0], "r");

@@ -9,7 +9,7 @@
 
 
 
-SpikeIf::SpikeIf(Memory *memory){
+SpikeIf::SpikeIf(CpuMemoryView *memory){
     this->memory = memory;
 }
 
@@ -21,9 +21,17 @@ char* SpikeIf::addr_to_mem(reg_t addr)  {
     return NULL;
 }
 // used for MMIO addresses
+bool SpikeIf::mmio_fetch(reg_t addr, size_t len, u8* bytes)  {
+    if((addr & 0xE0000000) != 0x00000000) {
+        memory->fetch(addr, len, bytes);
+        return true;
+    }
+    return false;
+}
+
 bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
     if((addr & 0xE0000000) != 0x00000000) {
-        memory->read(addr, len, bytes);
+        memory->load(addr, len, bytes);
         return true;
     }
 //        printf("mmio_load %lx %ld\n", addr, len);
@@ -39,7 +47,7 @@ bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
 }
 bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
     if((addr & 0xE0000000) != 0x00000000) {
-        memory->write(addr, len, (u8*) bytes);
+        memory->store(addr, len, (u8*) bytes);
         return true;
     }
 //        printf("mmio_store %lx %ld\n", addr, len);
@@ -65,7 +73,8 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, Memory *memory){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory){
+    this->memory = memory;
     this->physWidth = physWidth;
     sif = new SpikeIf(memory);
     FILE *fptr = 1 ? fopen(string("spike.log").c_str(),"w") : NULL;
@@ -150,6 +159,8 @@ void Hart::trap(bool interrupt, u32 code){
         printf("DUT did trap on %lx\n", fromPc);
         failure();
     }
+
+    memory->step();
     assertEq("DUT interrupt missmatch", interrupt, state->trap_interrupt);
     assertEq("DUT code missmatch", code, state->trap_code);
     physExtends(state->pc);
@@ -188,6 +199,7 @@ void Hart::commit(u64 pc){
 
     //Run the spike model
     proc->step(1);
+    memory->step();
 
     //Sync back some CSR
     state->mip->unlogged_write_with_mask(-1, 0);

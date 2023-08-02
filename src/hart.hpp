@@ -19,6 +19,7 @@
 #include "processor.h"
 #include "mmu.h"
 #include "simif.h"
+#include "coherency.hpp"
 
 
 using namespace std;
@@ -41,12 +42,13 @@ public:
 
 class SpikeIf : public simif_t{
 public:
-    Memory *memory;
+    CpuMemoryView *memory;
     queue <TraceIo> ioQueue;
 
-    SpikeIf(Memory *memory);
+    SpikeIf(CpuMemoryView *memory);
 
     virtual char* addr_to_mem(reg_t addr);
+    virtual bool mmio_fetch(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_load(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_store(reg_t addr, size_t len, const u8* bytes);
     virtual void proc_reset(unsigned id);
@@ -58,6 +60,7 @@ public:
     SpikeIf *sif;
     processor_t *proc;
     state_t *state;
+    CpuMemoryView *memory;
 
     u32 physWidth;
 
@@ -71,7 +74,7 @@ public:
     u64 csrReadData = 0;
 
 
-    Hart(u32 hartId, string isa, string priv, u32 physWidth, Memory *memory);
+    Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory);
     void close();
     void setPc(u64 pc);
     void writeRf(u32 rfKind, u32 address, u64 data);

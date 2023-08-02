@@ -4,9 +4,9 @@ using namespace std;
 
 void checkFile(std::ifstream &lines){
     Context context;
-#define rv context.harts[hartId]
+    #define rv context.harts[hartId]
     std::string line;
-    u64 lineId = 0;
+    u64 lineId = 1;
     try{
         while (getline(lines, line)){
             istringstream f(line);
@@ -35,6 +35,38 @@ void checkFile(std::ifstream &lines){
                         throw runtime_error(line);
                     }
 
+                } else if (str == "load") {
+                    f >> str;
+                    if(str == "exe") {
+                        u32 hartId, lqId;
+                        u64 address, len, data;
+                        f >> hartId >> lqId >> len >> hex >> address >> data >> dec;
+                        rv->memory->loadExecute(lqId, address, len, (u8*)&data);
+                    } else if(str == "com") {
+                        u32 hartId, lqId;
+                        f >> hartId >> lqId;
+                        rv->memory->loadCommit(lqId);
+                    } else if(str == "flu") {
+                        u32 hartId;
+                        f >> hartId;
+                        rv->memory->loadFlush();
+                    } else {
+                        throw runtime_error(line);
+                    }
+                } else if (str == "store") {
+                    f >> str;
+                    if(str == "com") {
+                        u32 hartId, sqId;
+                        u64 address, len, data;
+                        f >> hartId >> sqId >> len >> hex >> address >> data >> dec;
+                        rv->memory->storeCommit(sqId, address, len, (u8*)&data);
+                    } else if(str == "bro") {
+                        u32 hartId, sqId;
+                        f >> hartId >> sqId;
+                        rv->memory->storeBroadcast(sqId);
+                    } else {
+                        throw runtime_error(line);
+                    }
                 } else if (str == "io") {
                     u32 hartId;
                     f >> hartId;
@@ -66,10 +98,10 @@ void checkFile(std::ifstream &lines){
                         throw runtime_error(line);
                     }
                 } else if(str == "new"){
-                    u32 hartId, physWidth;
+                    u32 hartId, physWidth, viewId;
                     string isa, priv;
-                    f >> hartId >> isa >> priv >> physWidth;
-                    context.rvNew(hartId, isa, priv, physWidth);
+                    f >> hartId >> isa >> priv >> physWidth >> viewId;
+                    context.rvNew(hartId, isa, priv, physWidth, viewId);
                 } else {
                     throw runtime_error(line);
                 }
@@ -83,13 +115,23 @@ void checkFile(std::ifstream &lines){
                 } else {
                     throw runtime_error(line);
                 }
-            }  else if(str == "bin"){
+            } else if(str == "bin"){
                 f >> str;
                 if(str == "load"){
                     string path;
                     u64 offset;
                     f >> hex >> offset >> dec >> path;
                     context.loadBin(path, offset);
+                } else {
+                    throw runtime_error(line);
+                }
+            } else if(str == "memview"){
+                f >> str;
+                if(str == "new"){
+                    string path;
+                    u64 id, readIds, writeIds;
+                    f >> id >> readIds >> writeIds;
+                    context.cpuMemoryViewNew(id, readIds, writeIds);
                 } else {
                     throw runtime_error(line);
                 }
@@ -100,6 +142,7 @@ void checkFile(std::ifstream &lines){
         }
     } catch (const std::exception &e) {
         printf("Failed at line %ld : %s\n", lineId, line.c_str());
+        printf("- %s\n", e.what());
         context.close();
         throw e;
     }
