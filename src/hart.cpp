@@ -29,6 +29,15 @@ bool SpikeIf::mmio_fetch(reg_t addr, size_t len, u8* bytes)  {
     return false;
 }
 
+
+bool SpikeIf::mmio_mmu(reg_t addr, size_t len, u8* bytes)  {
+    if((addr & 0xE0000000) != 0x00000000) {
+        memory->mmu(addr, len, bytes);
+        return true;
+    }
+    return false;
+}
+
 bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
     if((addr & 0xE0000000) != 0x00000000) {
         memory->load(addr, len, bytes);

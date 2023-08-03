@@ -49,6 +49,7 @@ public:
 
     virtual char* addr_to_mem(reg_t addr);
     virtual bool mmio_fetch(reg_t addr, size_t len, u8* bytes);
+    virtual bool mmio_mmu(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_load(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_store(reg_t addr, size_t len, const u8* bytes);
     virtual void proc_reset(unsigned id);

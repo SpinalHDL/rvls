@@ -27,10 +27,26 @@ public:
         u8 bytes[8];
         u64 userId;
         bool valid = false;
+
+        inline void bypass(Access &load){
+            if(load.addr < this->addr + this->len &&
+               this->addr < load.addr + load.len){
+                //do bypass
+                u64 startAt = max(load.addr, this->addr);
+                u64 endAt = min(load.addr + load.len, this->addr + this->len);
+                for(u64 addr = startAt; addr < endAt; addr++){
+                    load.bytes[addr - load.addr] = this->bytes[addr - this->addr];
+                }
+            }
+        }
     };
 
     u64 loadsInflightCount;
     vector<Access*> loadsInflight;
+
+    u64 storesInflightCount;
+    vector<Access*> storesInflight;
+
     vector<Access> loads;
     vector<Access> stores;
     Access *storeFresh, *loadFresh;
@@ -45,6 +61,7 @@ public:
 
     //Spike interface
     void fetch(u32 address,u32 length, u8 *data);
+    void mmu(u32 address,u32 length, u8 *data);
     void load(u32 address,u32 length, u8 *data);
     void store(u32 address,u32 length, const u8 *data);
     void step();

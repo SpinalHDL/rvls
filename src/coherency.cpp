@@ -5,6 +5,8 @@
 CpuMemoryView::CpuMemoryView(Memory &memory, u64 readIds, u64 writeIds) : memory(memory){
     loadsInflightCount = 0;
     loadsInflight.resize(readIds);
+    storesInflightCount = 0;
+    storesInflight.resize(readIds);
     loads.resize(readIds);
     stores.resize(writeIds);
     storeFresh = NULL;
@@ -18,8 +20,13 @@ void CpuMemoryView::loadExecute(u64 id, u64 addr, size_t len, const u8* bytes){
     if(len > 8) throw std::runtime_error("Load len to big ???");
     load.addr = addr;
     load.len = len;
-    //memcpy(load.bytes, bytes, len); //TODO check data loaded for dut
     memory.read(addr, len, load.bytes);
+    for(u64 i = 0; i < storesInflightCount;i++){
+        auto &store = *storesInflight[i];
+        if(!store.valid)
+            throw std::runtime_error("load wasn't valid wuuut ???");
+        store.bypass(load);
+    }
     if(!load.valid) {
         load.userId = loadsInflightCount;
         loadsInflight[loadsInflightCount] = &load;
@@ -56,35 +63,28 @@ void CpuMemoryView::storeCommit(u64 id, u64 addr, size_t len, const u8* bytes){
     if(storeFresh) throw std::runtime_error("storeFresh was valid ???");
     storeFresh = &store;
 
-    //TODO we should probably used ref data instead of dut data to bypass stuff XD
-    for(u64 i = 0; i < loadsInflightCount;i++){
-        auto &load = *loadsInflight[i];
-        if(!load.valid)
-            throw std::runtime_error("load wasn't valid wuuut ???");
-        if(load.addr < store.addr + store.len &&
-           store.addr < load.addr + load.len){
-            //do bypass
-            u64 startAt = max(load.addr, store.addr);
-            u64 endAt = min(load.addr + load.len, store.addr + store.len);
-            for(u64 addr = startAt; addr < endAt; addr++){
-                load.bytes[addr - load.addr] = store.bytes[addr - store.addr];
-            }
-        }
-    }
+    store.userId = storesInflightCount;
+    storesInflight[storesInflightCount] = &store;
+    storesInflightCount += 1;
 }
 
 void CpuMemoryView::storeBroadcast(u64 id){
     auto &store = stores[id];
     if(!store.valid) throw std::runtime_error("Store wasn't valid ???");
     memory.write(store.addr, store.len, store.bytes);
+    storesInflightCount -= 1;
+    storesInflight[store.userId] = storesInflight[storesInflightCount];
+    storesInflight[store.userId]->userId = store.userId;
     store.valid = false;
 }
 
 
 //Spike interface
 void CpuMemoryView::load(u32 address,u32 length, u8 *data){
-    if(!loadFresh) throw std::runtime_error("loadFresh wasn't was NULL on check ???");
-    if(!loadFresh->valid) throw std::runtime_error("load wasn't valid on check ???");
+    if(!loadFresh)
+        throw std::runtime_error("loadFresh wasn't was NULL on check ???");
+    if(!loadFresh->valid)
+        throw std::runtime_error("load wasn't valid on check ???");
     auto &load = *loadFresh; loadFresh = NULL;
     assertEq("Bad load addr", load.addr, address);
     assertEq("Bad load length", load.len, length);
@@ -99,9 +99,21 @@ void CpuMemoryView::store(u32 address,u32 length, const u8 *data){
     assertEq("Bad store addr", store.addr, address);
     assertEq("Bad store length", store.len, length);
     if(memcmp(store.bytes, data, length)) throw std::runtime_error("store bad data ???");
+
+    //Bypass store values to inflight loads
+    for(u64 i = 0; i < loadsInflightCount;i++){
+        auto &load = *loadsInflight[i];
+        if(!load.valid)
+            throw std::runtime_error("load wasn't valid wuuut ???");
+        store.bypass(load);
+    }
 }
 
 void CpuMemoryView::fetch(u32 address,u32 length, u8 *data){
+    memory.read(address, length, data);
+}
+
+void CpuMemoryView::mmu(u32 address,u32 length, u8 *data){
     memory.read(address, length, data);
 }
 
