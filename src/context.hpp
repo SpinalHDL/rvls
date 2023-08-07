@@ -13,11 +13,12 @@ public:
     Memory memory;
     std::vector<Hart*> harts;
     std::vector<CpuMemoryView*> cpuMemoryViews;
+    FILE *spikeLogs;
 
     void loadElf(std::string path, u64 offset);
     void loadBin(std::string path, u64 offset);
     void cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds);
-    void rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 viewId);
+    void rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 viewId, FILE * logs);
     void close();
 };
 

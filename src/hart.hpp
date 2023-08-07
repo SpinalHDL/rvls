@@ -75,7 +75,7 @@ public:
     u64 csrReadData = 0;
 
 
-    Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory);
+    Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs);
     void close();
     void setPc(u64 pc);
     void writeRf(u32 rfKind, u32 address, u64 data);

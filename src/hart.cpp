@@ -82,13 +82,12 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs){
     this->memory = memory;
     this->physWidth = physWidth;
     sif = new SpikeIf(memory);
-    FILE *fptr = 1 ? fopen(string("spike.log").c_str(),"w") : NULL;
     std::ofstream outfile ("/dev/null",std::ofstream::binary);
-    proc = new processor_t(isa.c_str(), priv.c_str(), "", sif, hartId, false, fptr, outfile);
+    proc = new processor_t(isa.c_str(), priv.c_str(), "", sif, hartId, false, logs, outfile);
     auto xlen = proc->get_xlen();
     proc->set_impl(IMPL_MMU_SV32, xlen == 32);
     proc->set_impl(IMPL_MMU_SV39, xlen == 64);

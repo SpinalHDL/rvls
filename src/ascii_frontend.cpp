@@ -7,6 +7,7 @@ void checkFile(std::ifstream &lines){
     #define rv context.harts[hartId]
     std::string line;
     u64 lineId = 1;
+    context.spikeLogs = fopen("spike.log", "w");
     try{
         while (getline(lines, line)){
             istringstream f(line);
@@ -101,7 +102,7 @@ void checkFile(std::ifstream &lines){
                     u32 hartId, physWidth, viewId;
                     string isa, priv;
                     f >> hartId >> isa >> priv >> physWidth >> viewId;
-                    context.rvNew(hartId, isa, priv, physWidth, viewId);
+                    context.rvNew(hartId, isa, priv, physWidth, viewId, context.spikeLogs);
                 } else {
                     throw runtime_error(line);
                 }
