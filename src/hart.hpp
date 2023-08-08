@@ -74,6 +74,9 @@ public:
     u64 csrWriteData = 0;
     u64 csrReadData = 0;
 
+    bool scValid = false;
+    bool scFailure = false;
+
 
     Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs);
     void close();
@@ -85,6 +88,7 @@ public:
     void commit(u64 pc);
     void ioAccess(TraceIo io);
     void setInt(u32 id, bool value);
+    void scStatus(bool failure);
 };
 
 

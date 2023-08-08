@@ -65,6 +65,11 @@ void checkFile(std::ifstream &lines){
                         u32 hartId, sqId;
                         f >> hartId >> sqId;
                         rv->memory->storeBroadcast(sqId);
+                    } else if (str == "sc") {
+                        u32 hartId;
+                        bool pass;
+                        f >> hartId >> pass;
+                        rv->scStatus(pass);
                     } else {
                         throw runtime_error(line);
                     }

@@ -204,6 +204,14 @@ void Hart::commit(u64 pc){
         }
     }
 
+    if(scValid){
+        scValid = false;
+        if(scFailure) {
+            proc->get_mmu()->yield_load_reservation();
+        } else {
+            //Assume spike and dut match, but not necessarily true
+        }
+    }
 
     //Run the spike model
     proc->step(1);
@@ -275,5 +283,9 @@ void Hart::setInt(u32 id, bool value){
 
 }
 
+void Hart::scStatus(bool failure){
+    scValid = true;
+    scFailure = failure;
+}
 
 
