@@ -20,8 +20,6 @@ int main(int argc, char **argv){
 
     CLI11_PARSE(app, argc, argv);
 
-    printf("%d\n", config.spikeDebug);
-
     if(config.asciiTraceFile.empty()){
         printf("No work was given in arguments(");
         exit(1);

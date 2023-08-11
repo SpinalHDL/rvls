@@ -9,6 +9,7 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
     std::string line;
     u64 lineId = 1;
     context.spikeLogs = fopen("spike.log", "w");
+    cout << "Model check started" << endl;
     try{
         while (getline(lines, line)){
             istringstream f(line);
@@ -158,9 +159,9 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
         context.close();
         throw e;
     }
+    cout << "Model check Success <3" << endl;
     context.close();
 
-    cout << "Model check Success <3" << endl;
 }
 
 
