@@ -18,8 +18,8 @@
 #include "type.h"
 #include "context.hpp"
 #include "hart.hpp"
+#include "config.h"
 
-
-extern void checkFile(std::ifstream &lines);
+extern void checkFile(std::ifstream &lines, RvlsConfig &config);
 
 

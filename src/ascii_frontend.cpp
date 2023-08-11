@@ -2,8 +2,9 @@
 
 using namespace std;
 
-void checkFile(std::ifstream &lines){
+void checkFile(std::ifstream &lines, RvlsConfig &config){
     Context context;
+    context.config = config;
     #define rv context.harts[hartId]
     std::string line;
     u64 lineId = 1;

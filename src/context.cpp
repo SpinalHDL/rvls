@@ -18,8 +18,11 @@ void Context::cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds){
 }
 
 void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 viewId, FILE *logs){
+    auto hart = new Hart(hartId, isa, priv, physWidth, cpuMemoryViews[viewId], logs);
     harts.resize(max((size_t)(hartId+1), harts.size()));
-    harts[hartId] = new Hart(hartId, isa, priv, physWidth, cpuMemoryViews[viewId], logs);
+    harts[hartId] = hart;
+    if(config.spikeDebug) hart->proc->debug = true;
+    if(config.spikeLogCommit) hart->proc->enable_log_commits();
 }
 
 void Context::close(){

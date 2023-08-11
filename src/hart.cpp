@@ -94,8 +94,6 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *me
     proc->set_impl(IMPL_MMU_SV48, false);
     proc->set_impl(IMPL_MMU, true);
     proc->set_pmp_num(0);
-    proc->debug = true;
-    proc->enable_log_commits();
     state = proc->get_state();
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);

@@ -7,9 +7,11 @@
 #include <vector>
 #include <string>
 #include "coherency.hpp"
+#include "config.h"
 
 class Context{
 public:
+    RvlsConfig config;
     Memory memory;
     std::vector<Hart*> harts;
     std::vector<CpuMemoryView*> cpuMemoryViews;
