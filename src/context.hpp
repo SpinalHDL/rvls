@@ -14,11 +14,13 @@ public:
     std::vector<Hart*> harts;
     std::vector<CpuMemoryView*> cpuMemoryViews;
     FILE *spikeLogs;
+    u64 time = 0xFFFFFFFFFFFFFFFF;
 
     void loadElf(std::string path, u64 offset);
     void loadBin(std::string path, u64 offset);
     void cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds);
     void rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 viewId, FILE * logs);
     void close();
+    void print();
 };
 

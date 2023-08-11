@@ -111,6 +111,10 @@ void checkFile(std::ifstream &lines){
                 } else {
                     throw runtime_error(line);
                 }
+            } else if (str == "time") {
+                u64 time;
+                f >> time;
+                context.time = time;
             } else if(str == "elf"){
                 f >> str;
                 if(str == "load"){
@@ -149,6 +153,7 @@ void checkFile(std::ifstream &lines){
     } catch (const std::exception &e) {
         printf("Failed at line %ld : %s\n", lineId, line.c_str());
         printf("- %s\n", e.what());
+        context.print();
         context.close();
         throw e;
     }

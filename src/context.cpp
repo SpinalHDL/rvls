@@ -27,3 +27,9 @@ void Context::close(){
         if(hart) hart->close();
     }
 }
+
+void Context::print(){
+    if(time != 0xFFFFFFFFFFFFFFFF){
+        printf("time >= %ld\n", time);
+    }
+}
