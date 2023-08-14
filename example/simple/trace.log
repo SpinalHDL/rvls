@@ -1,0 +1,38 @@
+memview new 0 17 16
+rv new 0 RV32IMA MSU 32 0
+rv set pc 0 ffffffff80000000
+elf load  0000000000000000 /media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/build/rv32ima/simple.elf
+rv int set 0 7 1
+rv rf w 0 0 32 0000000000000001
+rv commit 0 ffffffff80000000
+rv rf w 0 0 32 0000000000000002
+rv commit 0 ffffffff80000004
+rv rf w 0 0 32 0000000000000003
+rv commit 0 ffffffff80000008
+rv commit 0 ffffffff8000000c
+rv commit 0 ffffffff80000010
+rv rf w 0 0 32 ffffffff80000014
+rv commit 0 ffffffff80000014
+rv rf w 0 0 32 ffffffff80000054
+rv commit 0 ffffffff80000018
+rv load exe 0 0 4 0000000080000054 0000000000000000
+rv load exe 0 0 4 0000000080000054 0000000000000010
+rv load com 0 0
+rv rf w 0 0 32 0000000000000010
+rv commit 0 ffffffff8000001c
+rv rf w 0 0 32 0000000000000011
+rv commit 0 ffffffff80000020
+rv store com 0 0 4 0000000080000054 0000000000000011
+rv commit 0 ffffffff80000024
+rv commit 0 ffffffff80000028
+rv commit 0 ffffffff8000002c
+rv commit 0 ffffffff80000030
+rv store bro 0 0
+rv commit 0 ffffffff80000034
+rv commit 0 ffffffff80000038
+rv commit 0 ffffffff8000003c
+rv commit 0 ffffffff80000040
+rv commit 0 ffffffff80000044
+rv commit 0 ffffffff80000048
+rv commit 0 ffffffff8000004c
+rv commit 0 ffffffff80000050

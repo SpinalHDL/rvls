@@ -3,3 +3,4 @@ build/
 .project
 *.log
 .settings
+!example/*/*
