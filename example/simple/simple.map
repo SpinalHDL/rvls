@@ -1,0 +1,30 @@
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+onChipRam        0x0000000080000000 0x0000000000020000 w !xr
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD build/rv32ima//media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/src/crt.o
+LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/11.1.0/../../../../riscv64-unknown-elf/lib/rv32ima/ilp32/libc.a
+LOAD /opt/riscv/lib/gcc/riscv64-unknown-elf/11.1.0/rv32ima/ilp32/libgcc.a
+
+.crt_section    0x0000000080000000       0x58
+                0x0000000080000000                . = ALIGN (0x4)
+ *crt.o(.text)
+ .text          0x0000000080000000       0x58 build/rv32ima//media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/src/crt.o
+                0x0000000080000000                _start
+OUTPUT(build/rv32ima/simple.elf elf32-littleriscv)
+
+.data           0x0000000080000058        0x0
+ .data          0x0000000080000058        0x0 build/rv32ima//media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/src/crt.o
+
+.bss            0x0000000080000058        0x0
+ .bss           0x0000000080000058        0x0 build/rv32ima//media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/src/crt.o
+
+.riscv.attributes
+                0x0000000000000000       0x24
+ .riscv.attributes
+                0x0000000000000000       0x24 build/rv32ima//media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/src/crt.o
