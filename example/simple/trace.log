@@ -1,7 +1,7 @@
 memview new 0 17 16
 rv new 0 RV32IMA MSU 32 0
 rv set pc 0 ffffffff80000000
-elf load  0000000000000000 /media/data/open/riscv/VexRiscvOoo/ext/NaxSoftware/baremetal/simple/build/rv32ima/simple.elf
+elf load  0000000000000000 example/simple/simple.elf
 rv int set 0 7 1
 rv rf w 0 0 32 0000000000000001
 rv commit 0 ffffffff80000000
