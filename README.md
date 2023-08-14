@@ -50,6 +50,11 @@ head -10 spike.log
 There is a ASCII based frontend which can be used to feed the CPUs execution traces.
 It consists into the simple lines of commands described bellow. 
 
+## General commands
+
+`time $value`
+- Used to provide some sporatic timestap, just for debug purposes
+
 ## Memory commands
 
 `elf load $offset_hex $path`
