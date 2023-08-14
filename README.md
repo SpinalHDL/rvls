@@ -7,18 +7,26 @@ RVLS (Risc-V Lock Step) is a CPU simulation trace checker.
 - Use Spike's "proc" as golden reference model
 - Use a lightly modified Spike version to provide more info and allow coherency checks
 
+See example/simple/trace.log for an example of ASCII trace which can be checked by RVLS
+
+RVLS is used to check the behaviour of multicore NaxRiscv. 
+NaxRiscv use a Write-Back L1 data cache, with tilelink to provide memory coherency between the cores, using a MESI protocol (https://en.wikipedia.org/wiki/MESI_protocol)
+
+Not everything is strictly keept in sync, noticibly, it assumes that :
+- The software and fence.i  keep the hardware L1 instruction cache coherent
+- The software and sfence keep the hardware MMU TLB coherent
 
 # How to use
 
 ```shell
-build/apps/rvls -f myTrace.log --spike-debug --spike-log
+build/apps/rvls -f example/simple/trace.log
 ```
 
 # How to compile
 
 ```shell
 git clone https://github.com/SpinalHDL/rvls.git
-git clone https://github.com/SpinalHDL/riscv-isa-sim.git
+git clone https://github.com/SpinalHDL/riscv-isa-sim.git --recursive
 
 # Building riscv-isa-sim (spike), used as a golden model during the sim to check the dut behaviour (lock-step)
 cd riscv-isa-sim
@@ -26,13 +34,13 @@ mkdir build
 cd build
 ../configure --prefix=$RISCV --enable-commitlog  --without-boost --without-boost-asio --without-boost-regex
 make -j$(nproc)
-cd ..
+cd ../..
 
 cd rvls
 make -j$(nproc)
 
 # Demo
-build/apps/rvls -f example/demo/trace.log --spike-debug --spike-log
+build/apps/rvls -f example/simple/trace.log --spike-debug --spike-log
 head -10 spike.log
 ```
    
@@ -54,6 +62,11 @@ It consists into the simple lines of commands described bellow.
 
 
 ## RISC-V commands
+
+There mostly 3 kind of RISC-V related commands :
+- The generals ones, to create a CPU / commit / trap
+- The ones to trace a register file read / write
+- The ones which are related to memory load / stores
 
 ### general commands
 
@@ -77,7 +90,6 @@ It consists into the simple lines of commands described bellow.
 - Specify when hardware values of the input interrupts pins (external / timer interrupts)
 - intId follow the privileged spec mstatus CSR 
 
-
 ### Register file commands 
 
 `rv rf w $hartId $rfKind $address $data_hex`
@@ -87,6 +99,7 @@ It consists into the simple lines of commands described bellow.
 `rv rf r $hartId $rfKind $address $data_hex`
 - rfKind : 0 = int, 1 = float, 4 = csr 
 - If address == 32 => don't check address
+- Note that currently, only the reads to CSR should be logged
 
 ### Load/Store commands
 `rv load exe $hartId $id $size $addr_hex $data_hex`
