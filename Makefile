@@ -24,8 +24,8 @@ INCLUDE += -I$(realpath ${SPIKE}/riscv)
 INCLUDE += -I$(realpath ${SPIKE}/fesvr)
 INCLUDE += -I$(realpath ${SPIKE}/softfloat)
 INCLUDE += -I$(realpath ${SPIKE_BUILD})
-INCLUDE += -I/home/rawrr/Downloads/idea-IC-213.6777.52/jbr/include
-INCLUDE += -I/home/rawrr/Downloads/idea-IC-213.6777.52/jbr/include/linux
+#INCLUDE += -I/home/rawrr/Downloads/idea-IC-213.6777.52/jbr/include
+#INCLUDE += -I/home/rawrr/Downloads/idea-IC-213.6777.52/jbr/include/linux
 
 
 

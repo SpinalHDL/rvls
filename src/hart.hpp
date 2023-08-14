@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <string>
 #include <memory>
-#include <jni.h>
 #include <iostream>
 #include <queue>
 #include <sstream>
