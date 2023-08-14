@@ -28,7 +28,7 @@ build/apps/rvls -f example/simple/trace.log
 git clone https://github.com/SpinalHDL/rvls.git
 git clone https://github.com/SpinalHDL/riscv-isa-sim.git --recursive
 
-# Building riscv-isa-sim (spike), used as a golden model during the sim to check the dut behaviour (lock-step)
+# Compile riscv-isa-sim (spike), used as a golden model during the sim to check the dut behaviour (lock-step)
 cd riscv-isa-sim
 mkdir build
 cd build
@@ -36,6 +36,7 @@ cd build
 make -j$(nproc)
 cd ../..
 
+# Compile RVLS
 cd rvls
 make -j$(nproc)
 
