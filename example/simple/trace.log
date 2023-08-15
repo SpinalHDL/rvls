@@ -1,6 +1,7 @@
 memview new 0 17 16
 rv new 0 RV32IMA MSU 32 0
 rv set pc 0 ffffffff80000000
+rv region add 0 0 0000000080000000 0000000080000000
 elf load  0000000000000000 example/simple/simple.elf
 rv int set 0 7 1
 rv rf w 0 0 32 0000000000000001

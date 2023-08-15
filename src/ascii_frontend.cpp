@@ -105,6 +105,18 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     } else {
                         throw runtime_error(line);
                     }
+                } else if (str == "region") {
+                    f >> str;
+                    if(str == "add"){
+                        u32 hartId;
+                        u64 type;
+                        Region r;
+                        f >> hartId >> type >> hex >> r.base >> r.size >> dec;
+                        r.type = (RegionType)type;
+                        rv->addRegion(r);
+                    } else {
+                        throw runtime_error(line);
+                    }
                 } else if(str == "new"){
                     u32 hartId, physWidth, viewId;
                     string isa, priv;

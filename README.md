@@ -83,6 +83,10 @@ There mostly 3 kind of RISC-V related commands :
 - physWidth specify the physical address memory width (32 bits max for now)
 - memoryViewId specify which memory view will be used by the CPU to do load/store
 
+`"rv region add $hartId $kind $base_hex $size_hex")`
+- Specify the memory regions for the given hart.
+- kind : 0=memory 1=io
+
 `rv set pc $hartId $pc_hex`
 - Used once after reset to specify where the CPU PC landed
 

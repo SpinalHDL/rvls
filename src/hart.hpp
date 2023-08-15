@@ -38,11 +38,18 @@ public:
 };
 
 
+enum RegionType  {mem = 0, io = 1};
+class Region{
+public:
+    RegionType type;
+    u64 base, size;
+};
 
 class SpikeIf : public simif_t{
 public:
     CpuMemoryView *memory;
     queue <TraceIo> ioQueue;
+    vector<Region> regions;
 
     SpikeIf(CpuMemoryView *memory);
 
@@ -53,6 +60,10 @@ public:
     virtual bool mmio_store(reg_t addr, size_t len, const u8* bytes);
     virtual void proc_reset(unsigned id);
     virtual const char* get_symbol(uint64_t addr);
+    bool isMem(u64 address);
+    bool isIo(u64 address);
+    bool isFetchable(u64 address);
+    Region* getRegion(u64 address);
 };
 
 class Hart{
@@ -88,6 +99,7 @@ public:
     void ioAccess(TraceIo io);
     void setInt(u32 id, bool value);
     void scStatus(bool failure);
+    void addRegion(Region r);
 };
 
 

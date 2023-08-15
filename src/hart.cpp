@@ -13,6 +13,30 @@ SpikeIf::SpikeIf(CpuMemoryView *memory){
     this->memory = memory;
 }
 
+Region* SpikeIf::getRegion(u64 address){
+    for(auto &r : regions){
+        if(address >= r.base && address < r.base + r.size) {
+            return &r;
+        }
+    }
+    return NULL;
+}
+
+bool SpikeIf::isMem(u64 address){
+    auto r = getRegion(address);
+    return r != NULL && r->type == RegionType::mem;
+}
+
+bool SpikeIf::isIo(u64 address){
+    auto r = getRegion(address);
+    return r != NULL && r->type == RegionType::io;
+}
+
+bool SpikeIf::isFetchable(u64 address){
+    auto r = getRegion(address);
+    return r != NULL;
+}
+
 // should return NULL for MMIO addresses
 char* SpikeIf::addr_to_mem(reg_t addr)  {
 //        if((addr & 0xE0000000) == 0x00000000) return NULL;
@@ -20,9 +44,10 @@ char* SpikeIf::addr_to_mem(reg_t addr)  {
 //        return (char*) memory->get(addr);
     return NULL;
 }
+
 // used for MMIO addresses
 bool SpikeIf::mmio_fetch(reg_t addr, size_t len, u8* bytes)  {
-    if((addr & 0xE0000000) != 0x00000000) {
+    if(isFetchable(addr)) {
         memory->fetch(addr, len, bytes);
         return true;
     }
@@ -31,7 +56,7 @@ bool SpikeIf::mmio_fetch(reg_t addr, size_t len, u8* bytes)  {
 
 
 bool SpikeIf::mmio_mmu(reg_t addr, size_t len, u8* bytes)  {
-    if((addr & 0xE0000000) != 0x00000000) {
+    if(isMem(addr)) {
         memory->mmu(addr, len, bytes);
         return true;
     }
@@ -39,36 +64,45 @@ bool SpikeIf::mmio_mmu(reg_t addr, size_t len, u8* bytes)  {
 }
 
 bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
-    if((addr & 0xE0000000) != 0x00000000) {
+    if(isMem(addr)) {
         memory->load(addr, len, bytes);
         return true;
     }
-//        printf("mmio_load %lx %ld\n", addr, len);
-    if(addr < 0x10000000 || addr > 0x20000000) return false;
-    assertTrue("missing mmio\n", !ioQueue.empty());
-    auto dut = ioQueue.front();
-    assertEq("mmio write\n", dut.write, false);
-    assertEq("mmio address\n", dut.address, addr);
-    assertEq("mmio len\n", dut.size, len);
-    memcpy(bytes, (u8*)&dut.data, len);
-    ioQueue.pop();
-    return !dut.error;
+    if(isIo(addr)){
+    //        printf("mmio_load %lx %ld\n", addr, len);
+        if(addr < 0x10000000 || addr > 0x20000000) return false;
+        assertTrue("missing mmio\n", !ioQueue.empty());
+        auto dut = ioQueue.front();
+        assertEq("mmio write\n", dut.write, false);
+        assertEq("mmio address\n", dut.address, addr);
+        assertEq("mmio len\n", dut.size, len);
+        memcpy(bytes, (u8*)&dut.data, len);
+        ioQueue.pop();
+        return !dut.error;
+    }
+
+    return false;
 }
 bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
-    if((addr & 0xE0000000) != 0x00000000) {
+    if(isMem(addr)) {
         memory->store(addr, len, (u8*) bytes);
         return true;
     }
-//        printf("mmio_store %lx %ld\n", addr, len);
-    if(addr < 0x10000000 || addr > 0x20000000) return false;
-    assertTrue("missing mmio\n", !ioQueue.empty());
-    auto dut = ioQueue.front();
-    assertEq("mmio write\n", dut.write, true);
-    assertEq("mmio address\n", dut.address, addr);
-    assertEq("mmio len\n", dut.size, len);
-    assertTrue("mmio data\n", !memcmp((u8*)&dut.data, bytes, len));
-    ioQueue.pop();
-    return !dut.error;
+
+    if(isIo(addr)){
+    //        printf("mmio_store %lx %ld\n", addr, len);
+        if(addr < 0x10000000 || addr > 0x20000000) return false;
+        assertTrue("missing mmio\n", !ioQueue.empty());
+        auto dut = ioQueue.front();
+        assertEq("mmio write\n", dut.write, true);
+        assertEq("mmio address\n", dut.address, addr);
+        assertEq("mmio len\n", dut.size, len);
+        assertTrue("mmio data\n", !memcmp((u8*)&dut.data, bytes, len));
+        ioQueue.pop();
+        return !dut.error;
+    }
+
+    return false;
 }
 // Callback for processors to let the simulation know they were reset.
 void SpikeIf::proc_reset(unsigned id)  {
@@ -286,4 +320,6 @@ void Hart::scStatus(bool failure){
     scFailure = failure;
 }
 
-
+void Hart::addRegion(Region r){
+    sif->regions.push_back(r);
+}
