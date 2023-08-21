@@ -140,7 +140,7 @@ void Memory::loadHex(std::string path) {
 }
 
 void Memory::loadBin(std::string path, uint64_t offset) {
-    FILE *fp = std::fopen(&path[0], "r");
+    FILE *fp = std::fopen(path.c_str(), "r");
     if(fp == 0){
         std::cout << path << " not found" << std::endl;
         throw std::exception();

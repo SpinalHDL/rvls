@@ -17,6 +17,7 @@ jclass userDataClass;
 jmethodID methodId;
 
 #define rvlsJni(n) JNIEXPORT void JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
+#define rvlsJniBool(n) JNIEXPORT bool JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
 
 #define c ((Context*)handle)
 #define rv c->harts[hartId]
@@ -47,6 +48,10 @@ rvlsJni(spikeDebug), jboolean enable){
 rvlsJni(spikeLogCommit), jboolean enable){
 	c->config.spikeLogCommit = enable;
 }
+rvlsJni(time), unsigned long value){
+    c->time = value;
+}
+
 
 rvlsJni(newCpuMemoryView),int viewId, long readIds, long writeIds){
 	c->cpuMemoryViewNew(viewId, readIds, writeIds);
@@ -74,16 +79,25 @@ rvlsJni(readRf), int hartId, int rfKind, int address, long data) {
 	rv->readRf(rfKind, address, data);
 }
 
-rvlsJni(commit), int hartId, long pc) {
+rvlsJniBool(commit), int hartId, long pc) {
 	try{
 		rv->commit(pc);
 	} catch (const std::exception &e) {
-		printf("commit missmatch\n");
+		printf("commit error\n");
 		printf("- %s\n", e.what());
+	    return false;
 	}
+	return true;
 }
-rvlsJni(trap), int hartId, jboolean interrupt, int code) {
-	rv->trap(interrupt, code);
+rvlsJniBool(trap), int hartId, jboolean interrupt, int code) {
+	try{
+		rv->trap(interrupt, code);
+	} catch (const std::exception &e) {
+		printf("commit error\n");
+		printf("- %s\n", e.what());
+	    return false;
+	}
+	return true;
 }
 rvlsJni(ioAccess), int hartId, jboolean write, long address, long data, int mask, int size, jboolean error){
 	TraceIo a;
@@ -107,7 +121,7 @@ rvlsJni(addRegion), int hartId, int kind, long base, long size){
     rv->addRegion(r);
 }
 rvlsJni(loadExecute), int hartId, long id, long addr, long len, long data){
-    rv->memory->loadExecute(id, addr, len, (u8*)data);
+    rv->memory->loadExecute(id, addr, len, (u8*)&data);
 }
 rvlsJni(loadCommit), int hartId, long id){
     rv->memory->loadCommit( id);
@@ -116,7 +130,7 @@ rvlsJni(loadFlush), int hartId){
     rv->memory->loadFlush();
 }
 rvlsJni(storeCommit), int hartId, long id, long addr, long len, long data){
-    rv->memory->storeCommit(id, addr, len, (u8*)data);
+    rv->memory->storeCommit(id, addr, len, (u8*)&data);
 }
 rvlsJni(storeBroadcast), int hartId, long id){
     rv->memory->storeBroadcast(id);
