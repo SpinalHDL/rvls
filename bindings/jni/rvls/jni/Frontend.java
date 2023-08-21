@@ -32,6 +32,6 @@ public class Frontend  {
     public static native void close(long handle);
 
     static {
-        System.load(new File("ext/rvls/build/apps/rvls").getAbsolutePath());
+        System.load(new File("ext/rvls/build/apps/rvls.so").getAbsolutePath());
     }
 }

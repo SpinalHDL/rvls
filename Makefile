@@ -22,11 +22,14 @@ INCLUDE += -I$(realpath ${SPIKE}/softfloat)
 INCLUDE += -I$(realpath ${SPIKE_BUILD})
 
 
+JNI_INCLUDE ?= $(dir $(shell readlink -f $(shell which javac)))../include
+
 ifneq ($(JNI_INCLUDE),)
+ifneq ($(JNI_INCLUDE),../include)
 	CXXFLAGS += -I${JNI_INCLUDE}
 	CXXFLAGS += -I${JNI_INCLUDE}/linux
-	CXXFLAGS += -fPIC -shared 
-	LDFLAGS += -fPIC -shared 
+	CXXFLAGS += -DRVLS_JNI
+endif
 endif
 
 
@@ -44,11 +47,17 @@ all: build $(APP_DIR)/$(TARGET)
 
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -MMD -o $@
+	$(CXX) -fPIC -shared $(CXXFLAGS) $(INCLUDE) -c $< -MMD -o $@
 
-$(APP_DIR)/$(TARGET): $(OBJECTS)
+$(APP_DIR)/$(TARGET).so: $(OBJECTS)
+	@mkdir -p $(@D)
+	$(CXX) -fPIC -shared $(CXXFLAGS) -o $(APP_DIR)/$(TARGET).so $^ $(LDFLAGS) $(LIBRARIES)
+	
+
+$(APP_DIR)/$(TARGET): $(APP_DIR)/$(TARGET).so
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/$(TARGET) $^ $(LDFLAGS) $(LIBRARIES)
+	
 
 -include $(DEPENDENCIES)
 

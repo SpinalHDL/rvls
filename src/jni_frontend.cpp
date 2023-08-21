@@ -1,5 +1,6 @@
-#include <jni.h>
+#ifdef RVLS_JNI
 
+#include <jni.h>
 #include <stdint.h>
 #include <string>
 #include <iostream>
@@ -140,11 +141,9 @@ rvlsJni(storeConditional), int hartId, jboolean failure){
 }
 
 
-
-
 #ifdef __cplusplus
 }
 #endif
 
-
+#endif
 
