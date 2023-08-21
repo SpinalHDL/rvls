@@ -22,6 +22,18 @@ Not everything is strictly keept in sync, noticibly, it assumes that :
 build/apps/rvls -f example/simple/trace.log
 ```
 
+# Dependencies
+
+```shell
+sudo apt-get install device-tree-compiler libboost-all-dev
+
+# Install ELFIO, used to load elf file in the sim 
+git clone https://github.com/serge1/ELFIO.git
+cd ELFIO
+git checkout d251da09a07dff40af0b63b8f6c8ae71d2d1938d # Avoid C++17
+sudo cp -R elfio /usr/include
+```
+
 # How to compile
 
 ```shell
