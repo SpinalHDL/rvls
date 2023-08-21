@@ -8,7 +8,7 @@ RVLS (Risc-V Lock Step) is a CPU simulation trace checker.
 - Use Spike's "proc" as golden reference model
 - Use a lightly modified Spike version to provide more info and allow coherency checks
 
-See example/simple/trace.log for an example of ASCII trace which can be checked by RVLS
+See [example/simple/trace.log](example/simple/trace.log) for an example of ASCII trace which can be checked by RVLS
 
 RVLS is used to check the behaviour of multicore NaxRiscv. 
 NaxRiscv use a Write-Back L1 data cache, with tilelink to provide memory coherency between the cores, using a MESI protocol (https://en.wikipedia.org/wiki/MESI_protocol)
@@ -60,7 +60,7 @@ head -10 spike.log
    
 # JNI frontend
 
-You can find the Java JNI interface in the bindings/jni folder. It works in a very similar to the ASCII frontend excepted for the followings : 
+You can find the Java JNI interface in the [bindings/jni/rvls/jni/Frontend.java](bindings/jni/rvls/jni/Frontend.java) folder. It works in a very similar to the ASCII frontend excepted for the followings : 
 - Commands a provided via JNI calls (no file involved)
 - Allows to check the behaviour of the SoC durring the simulation itself (lock-step) 
 
@@ -68,6 +68,8 @@ You can find the Java JNI interface in the bindings/jni folder. It works in a ve
 
 There is a ASCII based frontend which can be used to feed the CPUs execution traces.
 It consists into the simple lines of commands described bellow. 
+
+See [example/simple/trace.log](example/simple/trace.log) for an example of trace.
 
 ## General commands
 
