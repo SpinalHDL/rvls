@@ -32,6 +32,7 @@ public:
     u32 size;
     bool error;
 
+    TraceIo(){}
     TraceIo(std::istringstream &f){
         f >> write >> hex >> address >> data >> mask >> dec >> size >> error;
     }

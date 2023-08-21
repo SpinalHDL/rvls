@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 #include "coherency.hpp"
-#include "config.h"
+#include "config.hpp"
 
 class Context{
 public:

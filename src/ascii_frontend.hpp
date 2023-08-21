@@ -14,10 +14,10 @@
 #include <queue>
 #include <sstream>
 
+#include "config.hpp"
 #include "type.h"
 #include "context.hpp"
 #include "hart.hpp"
-#include "config.h"
 
 extern void checkFile(std::ifstream &lines, RvlsConfig &config);
 

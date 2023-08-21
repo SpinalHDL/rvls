@@ -173,7 +173,6 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
     }
     cout << "Model check Success <3" << endl;
     context.close();
-
 }
 
 
