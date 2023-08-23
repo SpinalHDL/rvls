@@ -44,10 +44,17 @@ rvlsJni(deleteContext)){
 
 rvlsJni(spikeDebug), jboolean enable){
     c->config.spikeDebug = enable;
+	for(auto hart : c->harts){
+		hart->proc->debug = enable;
+	}
 }
 
 rvlsJni(spikeLogCommit), jboolean enable){
 	c->config.spikeLogCommit = enable;
+	for(auto hart : c->harts){
+		if(enable)  hart->proc->enable_log_commits();
+		if(!enable)  hart->proc->disable_log_commits();
+	}
 }
 rvlsJni(time), unsigned long value){
     c->time = value;
