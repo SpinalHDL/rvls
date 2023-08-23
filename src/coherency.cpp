@@ -5,8 +5,8 @@
 CpuMemoryView::CpuMemoryView(Memory &memory, u64 readIds, u64 writeIds) : memory(memory){
     loadsInflightCount = 0;
     loadsInflight.resize(readIds);
-    storesInflightCount = 0;
-    storesInflight.resize(readIds);
+    storeHead = NULL;
+	storeLast = NULL;
     loads.resize(readIds);
     stores.resize(writeIds);
     storeFresh = NULL;
@@ -21,11 +21,12 @@ void CpuMemoryView::loadExecute(u64 id, u64 addr, size_t len, const u8* bytes){
     load.addr = addr;
     load.len = len;
     memory.read(addr, len, load.bytes);
-    for(u64 i = 0; i < storesInflightCount;i++){
-        auto &store = *storesInflight[i];
-        if(!store.valid)
-            throw std::runtime_error("load wasn't valid wuuut ???");
-        store.bypass(load);
+    Access *store = storeHead;
+    while(store){
+    	if(!store->valid)
+			throw std::runtime_error("store wasn't valid wuuut ???");
+    	store->bypass(load);
+    	store = store->next;
     }
     if(!load.valid) {
         load.userId = loadsInflightCount;
@@ -63,18 +64,31 @@ void CpuMemoryView::storeCommit(u64 id, u64 addr, size_t len, const u8* bytes){
     if(storeFresh) throw std::runtime_error("storeFresh was valid ???");
     storeFresh = &store;
 
-    store.userId = storesInflightCount;
-    storesInflight[storesInflightCount] = &store;
-    storesInflightCount += 1;
+
+	store.previous = storeLast;
+	store.next = NULL;
+    if(storeLast) {
+    	storeLast->next = &store;
+    } else {
+    	storeHead = &store;
+    }
+    storeLast = &store;
 }
 
 void CpuMemoryView::storeBroadcast(u64 id){
     auto &store = stores[id];
     if(!store.valid) throw std::runtime_error("Store wasn't valid ???");
     memory.write(store.addr, store.len, store.bytes);
-    storesInflightCount -= 1;
-    storesInflight[store.userId] = storesInflight[storesInflightCount];
-    storesInflight[store.userId]->userId = store.userId;
+    if(store.next){
+    	store.next->previous = store.previous;
+    } else {
+    	storeLast = store.previous;
+    }
+    if(store.previous){
+    	store.previous->next = store.next;
+    } else {
+    	storeHead = store.next;
+    }
     store.valid = false;
 }
 

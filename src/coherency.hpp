@@ -27,6 +27,7 @@ public:
         u8 bytes[8];
         u64 userId;
         bool valid = false;
+        Access *previous, *next;
 
         inline void bypass(Access &load){
             if(load.addr < this->addr + this->len &&
@@ -44,8 +45,11 @@ public:
     u64 loadsInflightCount;
     vector<Access*> loadsInflight;
 
-    u64 storesInflightCount;
-    vector<Access*> storesInflight;
+//    u64 storesInflightCount;
+//    vector<Access*> storesInflight;
+
+    Access *storeHead, *storeLast;
+
 
     vector<Access> loads;
     vector<Access> stores;
