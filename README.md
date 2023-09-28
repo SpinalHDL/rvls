@@ -3,7 +3,8 @@
 RVLS (Risc-V Lock Step) is a CPU simulation trace checker.
 - Typical usage is to check that a simulated CPU system is behaving right
 - Has a human-readable text frontend to feed the traces
-- Hsa a Java JNI frontend for its integration in a SpinalHDL / Chisel based testbench
+- Can be directly integrated into a C++ sim for direct checking
+- Has a Java JNI frontend for its integration in a SpinalHDL / Chisel based testbench
 - Support multi-core systems, by tracking memory coherency status across CPUs
 - Use Spike's "proc" as golden reference model
 - Use a lightly modified Spike version to provide more info and allow coherency checks
