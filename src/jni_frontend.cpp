@@ -36,16 +36,20 @@ string toString(JNIEnv *env, jstring jstr){
     return str;
 }
 
-JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_disasm(JNIEnv * env, jobject obj, int xlen, long instruction){
-	std::string str;
-	switch(xlen){
-	case 32: str = disasm32.disassemble(instruction); break;
-	case 64: str = disasm64.disassemble(instruction); break;
-	}
-	jstring result;
-	result = env->NewStringUTF(str.c_str());
+JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newDisassemble(JNIEnv * env, jobject obj, int xlen){
+    return  (jlong) new disassembler_t(xlen);
+}
+
+JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_disassemble(JNIEnv * env, jobject obj, long handle, long instruction){
+	std::string str = ((disassembler_t*)handle)->disassemble(instruction);
+	jstring result = env->NewStringUTF(str.c_str());
     return result;
 }
+
+JNIEXPORT void JNICALL Java_rvls_jni_Frontend_deleteDisassemble(JNIEnv * env, jobject obj, long handle){
+	delete (disassembler_t*)handle;
+}
+
 
 JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newContext(JNIEnv * env, jobject obj, jstring jworkspace){
 	string workspace = toString(env, jworkspace);

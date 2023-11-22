@@ -3,7 +3,10 @@ package rvls.jni;
 import java.io.File;
 
 public class Frontend  {
-    public static native String disasm(int xlen, long instruction);
+    public static native long newDisassemble(int xlen);
+    public static native void deleteDisassemble(long handle);
+    public static native String disassemble(long handle, long instruction);
+    
     public static native long newContext(String workspace);
     public static native void deleteContext(long handle);
 
