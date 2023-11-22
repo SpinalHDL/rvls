@@ -9,6 +9,11 @@
 #include "context.hpp"
 #include "config.hpp"
 #include "hart.hpp"
+#include "disasm.h"
+
+
+static disassembler_t disasm32 = disassembler_t(32);
+static disassembler_t disasm64 = disassembler_t(64);
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +34,17 @@ string toString(JNIEnv *env, jstring jstr){
     string str = string(chars);
     env->ReleaseStringUTFChars(jstr, chars);
     return str;
+}
+
+JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_disasm(JNIEnv * env, jobject obj, int xlen, long instruction){
+	std::string str;
+	switch(xlen){
+	case 32: str = disasm32.disassemble(instruction); break;
+	case 64: str = disasm64.disassemble(instruction); break;
+	}
+	jstring result;
+	result = env->NewStringUTF(str.c_str());
+    return result;
 }
 
 JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newContext(JNIEnv * env, jobject obj, jstring jworkspace){

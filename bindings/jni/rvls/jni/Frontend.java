@@ -3,6 +3,7 @@ package rvls.jni;
 import java.io.File;
 
 public class Frontend  {
+    public static native String disasm(int xlen, long instruction);
     public static native long newContext(String workspace);
     public static native void deleteContext(long handle);
 
