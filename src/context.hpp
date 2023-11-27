@@ -17,6 +17,7 @@ public:
     std::vector<CpuMemoryView*> cpuMemoryViews;
     FILE *spikeLogs;
     u64 time = 0xFFFFFFFFFFFFFFFF;
+    std::string lastErrorMessage;
 
     void loadElf(std::string path, u64 offset);
     void loadBin(std::string path, u64 offset);

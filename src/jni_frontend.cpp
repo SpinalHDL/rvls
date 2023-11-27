@@ -24,6 +24,7 @@ jmethodID methodId;
 
 #define rvlsJni(n) JNIEXPORT void JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
 #define rvlsJniBool(n) JNIEXPORT bool JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
+#define rvlsJniString(n) JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
 
 #define c ((Context*)handle)
 #define rv c->harts[hartId]
@@ -111,8 +112,7 @@ rvlsJniBool(commit), int hartId, long pc) {
 	try{
 		rv->commit(pc);
 	} catch (const std::exception &e) {
-		printf("commit error\n");
-		printf("- %s\n", e.what());
+		c->lastErrorMessage = e.what();
 	    return false;
 	}
 	return true;
@@ -121,12 +121,19 @@ rvlsJniBool(trap), int hartId, jboolean interrupt, int code) {
 	try{
 		rv->trap(interrupt, code);
 	} catch (const std::exception &e) {
-		printf("commit error\n");
-		printf("- %s\n", e.what());
+		c->lastErrorMessage = e.what();
 	    return false;
 	}
 	return true;
 }
+
+rvlsJniString(getLastErrorMessage)) {
+	std::string str = c->lastErrorMessage;
+	jstring result = env->NewStringUTF(str.c_str());
+	return result;
+}
+
+
 rvlsJni(ioAccess), int hartId, jboolean write, long address, long data, int mask, int size, jboolean error){
 	TraceIo a;
 	a.write = write;

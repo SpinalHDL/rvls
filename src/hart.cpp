@@ -150,17 +150,15 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
         break;
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
-            printf("duplicated CSR access \n");
-            failure();
+        	failure("duplicated CSR access \n");
         }
         csrAddress = address;
         csrWrite = true;
         csrWriteData = data;
         break;
     default:
-        printf("??? unknown RF trace \n");
-        failure();
-        break;
+    	failure("??? unknown RF trace \n");
+    	break;
     }
 
 }
@@ -170,16 +168,14 @@ void Hart::readRf(u32 rfKind, u32 address, u64 data){
     switch(rfKind){
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
-            printf("duplicated CSR access \n");
-            failure();
+        	failure("duplicated CSR access \n");
         }
         csrAddress = address;
         csrRead = true;
         csrReadData = data;
         break;
     default:
-        printf("??? unknown RF trace \n");
-        failure();
+    	failure("??? unknown RF trace \n");
         break;
     }
 
@@ -196,8 +192,7 @@ void Hart::trap(bool interrupt, u32 code){
     proc->step(1);
     if(interrupt) state->mip->write_with_mask(mask, 0);
     if(!state->trap_happened){
-        printf("DUT did trap on %lx\n", fromPc);
-        failure();
+        failure("DUT did trap on %lx\n", fromPc);
     }
 
     memory->step();
@@ -208,8 +203,7 @@ void Hart::trap(bool interrupt, u32 code){
 
 void Hart::commit(u64 pc){
     if(pc != state->pc){
-        printf("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
-        failure();
+    	failure("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
     }
 
     //Sync CSR
@@ -296,8 +290,7 @@ void Hart::commit(u64 pc){
             csrWrite = false;
         } break;
         default: {
-            printf("??? unknown spike trace %lx\n", item.first & 0xf);
-            failure();
+            failure("??? unknown spike trace %lx\n", item.first & 0xf);
         } break;
         }
     }

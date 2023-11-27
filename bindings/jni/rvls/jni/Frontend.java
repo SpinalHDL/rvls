@@ -22,6 +22,7 @@ public class Frontend  {
     public static native void readRf(long handle, int hardId, int rfKind, int address, long data);
     public static native boolean commit(long handle, int hartId, long pc);
     public static native boolean trap(long handle, int hartId, boolean interrupt, int code);
+    public static native String getLastErrorMessage(long handle);
     public static native void ioAccess(long handle, int hartId, boolean write, long address, long data, int mask, int size, boolean error);
     public static native void setInterrupt(long handle, int hartId, int intId, boolean value);
     public static native void addRegion(long handle, int hartId, int kind, long base, long size);
