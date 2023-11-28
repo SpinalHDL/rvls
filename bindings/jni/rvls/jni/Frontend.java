@@ -26,12 +26,12 @@ public class Frontend  {
     public static native void ioAccess(long handle, int hartId, boolean write, long address, long data, int mask, int size, boolean error);
     public static native void setInterrupt(long handle, int hartId, int intId, boolean value);
     public static native void addRegion(long handle, int hartId, int kind, long base, long size);
-    public static native void loadExecute(long handle, int hartId, long id, long addr, long len, long data);
-    public static native void loadCommit(long handle, int hartId, long id);
-    public static native void loadFlush(long handle, int hartId);
-    public static native void storeCommit(long handle, int hartId, long id, long addr, long len, long data);
-    public static native void storeBroadcast(long handle, int hartId, long id);
-    public static native void storeConditional(long handle, int hartId, boolean failure);
+    public static native boolean loadExecute(long handle, int hartId, long id, long addr, long len, long data);
+    public static native boolean loadCommit(long handle, int hartId, long id);
+    public static native boolean loadFlush(long handle, int hartId);
+    public static native boolean storeCommit(long handle, int hartId, long id, long addr, long len, long data);
+    public static native boolean storeBroadcast(long handle, int hartId, long id);
+    public static native boolean storeConditional(long handle, int hartId, boolean failure);
     public static native void time(long handle, long value);
     public static native void flush(long handle);
     public static native void close(long handle);

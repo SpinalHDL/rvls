@@ -155,23 +155,59 @@ rvlsJni(addRegion), int hartId, int kind, long base, long size){
 	r.size = size;
     rv->addRegion(r);
 }
-rvlsJni(loadExecute), int hartId, long id, long addr, long len, long data){
-    rv->memory->loadExecute(id, addr, len, (u8*)&data);
+rvlsJniBool(loadExecute), int hartId, long id, long addr, long len, long data){
+	try{
+        rv->memory->loadExecute(id, addr, len, (u8*)&data);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(loadCommit), int hartId, long id){
-    rv->memory->loadCommit( id);
+rvlsJniBool(loadCommit), int hartId, long id){
+	try{
+        rv->memory->loadCommit( id);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(loadFlush), int hartId){
-    rv->memory->loadFlush();
+rvlsJniBool(loadFlush), int hartId){
+	try{
+        rv->memory->loadFlush();
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(storeCommit), int hartId, long id, long addr, long len, long data){
-    rv->memory->storeCommit(id, addr, len, (u8*)&data);
+rvlsJniBool(storeCommit), int hartId, long id, long addr, long len, long data){
+	try{
+        rv->memory->storeCommit(id, addr, len, (u8*)&data);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(storeBroadcast), int hartId, long id){
-    rv->memory->storeBroadcast(id);
+rvlsJniBool(storeBroadcast), int hartId, long id){
+	try{
+        rv->memory->storeBroadcast(id);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(storeConditional), int hartId, jboolean failure){
-    rv->scStatus(failure);
+rvlsJniBool(storeConditional), int hartId, jboolean failure){
+    try{
+        rv->scStatus(failure);
+    } catch (const std::exception &e) {
+        c->lastErrorMessage = e.what();
+        return false;
+    }
+    return true;
 }
 
 
