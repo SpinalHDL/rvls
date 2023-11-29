@@ -13,8 +13,13 @@ class TraceIo (var write: Boolean,
                var mask: Int,
                var size: Int,
                var error: Boolean){
+
+  def this(){
+    this(false, 0l, 0l, 0, 0, false)
+  }
   def serialized() = f"${write.toInt} $address%016x $data%016x $mask%02x $size ${error.toInt}"
 }
+
 trait TraceBackend{
   def spinalSimFlusher(period: Long): Unit = {
     periodicaly(period)(flush())
