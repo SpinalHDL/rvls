@@ -52,7 +52,7 @@ static std::string myvsprintf(const char* formatString, std::va_list args){
     }
 
     std::string s(r + 1, '\0');
-    r = std::vsnprintf(s.data(), r + 1, formatString, args2);
+    r = std::vsnprintf((char *)s.data(), r + 1, formatString, args2);
 
     if (r < 0) {
         // TODO: HANDLE ERROR
