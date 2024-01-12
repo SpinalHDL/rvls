@@ -96,7 +96,7 @@ void CpuMemoryView::storeBroadcast(u64 id){
 //Spike interface
 void CpuMemoryView::load(u32 address,u32 length, u8 *data){
     if(!loadFresh)
-        throw std::runtime_error("loadFresh wasn't was NULL on check ???");
+        throw std::runtime_error("loadFresh wasn't NULL on check ???");
     if(!loadFresh->valid)
         throw std::runtime_error("load wasn't valid on check ???");
     auto &load = *loadFresh; loadFresh = NULL;
