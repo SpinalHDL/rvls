@@ -21,13 +21,19 @@ class TraceIo (var write: Boolean,
 }
 
 trait TraceBackend{
-  def spinalSimFlusher(period: Long): Unit = {
+  def spinalSimFlusher(period: Long): this.type = {
     periodicaly(period)(flush())
     onSimEnd(close())
+    this
   }
 
   def spinalSimTime(period: Long): Unit = {
     periodicaly(period)(time(simTime()))
+  }
+
+  def spinalSimPeriod(period : Long) = {
+    spinalSimFlusher(period)
+    spinalSimTime(period)
   }
 
   def newCpuMemoryView(viewId : Int, readIds : Long, writeIds : Long)
