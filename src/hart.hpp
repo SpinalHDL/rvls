@@ -79,6 +79,10 @@ public:
     bool integerWriteValid = false;
     u64 integerWriteData = 0;
 
+    bool floatWriteValid = false;
+    u64 floatWriteData = 0;
+
+
     u32 csrAddress = 0;
     bool csrWrite = false;
     bool csrRead = false;

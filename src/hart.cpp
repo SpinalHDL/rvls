@@ -148,6 +148,10 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
         integerWriteValid = true;
         integerWriteData = data;
         break;
+    case 1:
+        floatWriteValid = true;
+        floatWriteData = data;
+        break;
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
         	failure("duplicated CSR access \n");
@@ -270,6 +274,11 @@ void Hart::commit(u64 pc){
             assertEq("INTEGER WRITE MISSMATCH", integerWriteData, item.second.v[0]);
             integerWriteValid = false;
         } break;
+        case 1: { //float
+            assertTrue("FLOAT WRITE MISSING", floatWriteValid);
+            assertEq("FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
+            floatWriteValid = false;
+        } break;
         case 4:{ //CSR
             u64 inst = state->last_inst.bits();
             switch(inst){
@@ -299,6 +308,7 @@ void Hart::commit(u64 pc){
     csrRead = false;
     assertTrue("CSR WRITE SPAWNED", !csrWrite);
     assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
+    assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
 }
 
 void Hart::ioAccess(TraceIo io){
