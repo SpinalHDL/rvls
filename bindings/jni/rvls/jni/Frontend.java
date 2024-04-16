@@ -29,7 +29,8 @@ public class Frontend  {
     public static native boolean loadExecute(long handle, int hartId, long id, long addr, long len, long data);
     public static native boolean loadCommit(long handle, int hartId, long id);
     public static native boolean loadFlush(long handle, int hartId);
-    public static native boolean storeCommit(long handle, int hartId, long id, long addr, long len, long data);
+    public static native boolean storeExecute(long handle, int hartId, long id, long addr, long len, long data);
+    public static native boolean storeCommit(long handle, int hartId, long id);
     public static native boolean storeBroadcast(long handle, int hartId, long id);
     public static native boolean storeConditional(long handle, int hartId, boolean failure);
     public static native void time(long handle, long value);

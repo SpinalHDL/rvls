@@ -58,8 +58,9 @@ trait TraceBackend{
   def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit
   def loadCommit(hartId: Int, id : Long) : Unit
   def loadFlush(hartId: Int) : Unit
-  def storeCommit(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit
-  def storeBroadcast(hartId: Int, id : Long) : Unit
+  def storeExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit
+  def storeCommit(hartId: Int, id: Long): Unit
+  def storeBroadcast(hartId: Int, id: Long): Unit
   def storeConditional(hartId : Int, failure: Boolean) : Unit
 
   def time(value : Long) : Unit
@@ -84,7 +85,8 @@ class DummyBackend() extends TraceBackend{
   override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long) = {}
   override def loadCommit(hartId: Int, id: Long) = {}
   override def loadFlush(hartId: Int) = {}
-  override def storeCommit(hartId: Int, id: Long, addr: Long, len: Long, data: Long) = {}
+  override def storeExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long) = {}
+  override def storeCommit(hartId: Int, id: Long) = {}
   override def storeBroadcast(hartId: Int, id: Long) = {}
   override def storeConditional(hartId: Int, failure: Boolean) = {}
   override def time(value: Long) = {}
@@ -157,9 +159,12 @@ class FileBackend(f : File) extends TraceBackend{
   override def loadFlush(hartId: Int) : Unit = {
     log(f"rv load flu $hartId\n")
   }
-  override def storeCommit(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit = {
-    log(f"rv store com $hartId $id $len $addr%016x $data%016x\n")
+  override def storeExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit = {
+    log(f"rv store exe $hartId $id $len $addr%016x $data%016x\n")
   }
+  override def storeCommit(hartId: Int, id : Long) : Unit = {
+    log(f"rv store com $hartId $id\n")
+  }  
   override def storeBroadcast(hartId: Int, id : Long) : Unit = {
     log(f"rv store bro $hartId $id\n")
   }
@@ -210,7 +215,8 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.loadExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def loadCommit(hartId: Int, id: Long): Unit = if(!Frontend.loadCommit(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def loadFlush(hartId: Int): Unit = if(!Frontend.loadFlush(handle, hartId)) throw new Exception(Frontend.getLastErrorMessage(handle))
-  override def storeCommit(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.storeCommit(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def storeExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.storeExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def storeCommit(hartId: Int, id: Long): Unit = if(!Frontend.storeCommit(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def storeBroadcast(hartId: Int, id: Long): Unit = if(!Frontend.storeBroadcast(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def storeConditional(hartId: Int, failure: Boolean): Unit = if(!Frontend.storeConditional(handle, hartId, failure)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def time(value: Long): Unit = Frontend.time(handle, value)

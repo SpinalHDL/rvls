@@ -29,6 +29,8 @@ public:
         bool valid = false;
         Access *previous, *next;
 
+        bool executed = false, commited = false, broadcasted = false;
+
         inline void bypass(Access &load){
             if(load.addr < this->addr + this->len &&
                this->addr < load.addr + load.len){
@@ -39,6 +41,13 @@ public:
                     load.bytes[addr - load.addr] = this->bytes[addr - this->addr];
                 }
             }
+        }
+
+        void clear(){
+        	executed = false;
+        	commited = false;
+        	broadcasted = false;
+			valid = false;
         }
     };
 
@@ -60,7 +69,8 @@ public:
     void loadExecute(u64 id, u64 addr, size_t len, const u8* bytes);
     void loadCommit(u64 id);
     void loadFlush();
-    void storeCommit(u64 id, u64 addr, size_t len, const u8* bytes);
+    void storeExecute(u64 id, u64 addr, size_t len, const u8* bytes);
+    void storeCommit(u64 id);
     void storeBroadcast(u64 id);
 
     //Spike interface

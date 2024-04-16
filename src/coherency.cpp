@@ -53,43 +53,61 @@ void CpuMemoryView::loadFlush(){
     loadsInflightCount = 0;
 }
 
-void CpuMemoryView::storeCommit(u64 id, u64 addr, size_t len, const u8* bytes){
+void CpuMemoryView::storeExecute(u64 id, u64 addr, size_t len, const u8* bytes){
     auto &store = stores[id];
 //    if(store.valid) throw std::runtime_error("Store was valid ???");
     if(len > 8) throw std::runtime_error("Store len to big ???");
-    store.valid = true;
+    if(store.commited) throw std::runtime_error("Store was already commited ???");
+    if(store.broadcasted) throw std::runtime_error("Store was already broadcasted ???");
+    store.executed = true;
     store.addr = addr;
     store.len = len;
     memcpy(store.bytes, bytes, len);
+}
+
+void CpuMemoryView::storeCommit(u64 id){
+    auto &store = stores[id];
     if(storeFresh) throw std::runtime_error("storeFresh was valid ???");
     storeFresh = &store;
+    if(!store.executed) throw std::runtime_error("Store wasn't executed ???");
+    if(store.commited) throw std::runtime_error("Store was already commited ???");
+    store.commited = true;
 
-
-	store.previous = storeLast;
-	store.next = NULL;
-    if(storeLast) {
-    	storeLast->next = &store;
+    if(!store.broadcasted){
+		store.valid = true;
+		store.previous = storeLast;
+		store.next = NULL;
+		if(storeLast) {
+			storeLast->next = &store;
+		} else {
+			storeHead = &store;
+		}
+		storeLast = &store;
     } else {
-    	storeHead = &store;
+    	store.clear();
     }
-    storeLast = &store;
 }
 
 void CpuMemoryView::storeBroadcast(u64 id){
     auto &store = stores[id];
-    if(!store.valid) throw std::runtime_error("Store wasn't valid ???");
+    if(!store.executed) throw std::runtime_error("Store wasn't executed ???");
+    if(store.broadcasted) throw std::runtime_error("Store was already broadcasted ???");
     memory.write(store.addr, store.len, store.bytes);
-    if(store.next){
-    	store.next->previous = store.previous;
-    } else {
-    	storeLast = store.previous;
+    store.broadcasted = true;
+    if(store.commited){
+		if(store.next){
+			store.next->previous = store.previous;
+		} else {
+			storeLast = store.previous;
+		}
+		if(store.previous){
+			store.previous->next = store.next;
+		} else {
+			storeHead = store.next;
+		}
+		store.valid = false;
+    	store.clear();
     }
-    if(store.previous){
-    	store.previous->next = store.next;
-    } else {
-    	storeHead = store.next;
-    }
-    store.valid = false;
 }
 
 
@@ -108,7 +126,7 @@ void CpuMemoryView::load(u32 address,u32 length, u8 *data){
 
 void CpuMemoryView::store(u32 address,u32 length, const u8 *data){
     if(!storeFresh) throw std::runtime_error("storeFresh wasn't valid on check ???");
-    if(!storeFresh->valid) throw std::runtime_error("Store wasn't valid on check ???");
+    //if(!storeFresh->executed) throw std::runtime_error("Store wasn't executed on check ???");
     auto &store = *storeFresh; storeFresh = NULL;
     assertEq("Bad store addr", store.addr, address);
     assertEq("Bad store length", store.len, length);

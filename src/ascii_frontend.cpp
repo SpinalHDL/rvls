@@ -58,11 +58,15 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     }
                 } else if (str == "store") {
                     f >> str;
-                    if(str == "com") {
+                    if(str == "exe") {
                         u32 hartId, sqId;
                         u64 address, len, data;
                         f >> hartId >> sqId >> len >> hex >> address >> data >> dec;
-                        rv->memory->storeCommit(sqId, address, len, (u8*)&data);
+                        rv->memory->storeExecute(sqId, address, len, (u8*)&data);
+                    } else if(str == "com") {
+                        u32 hartId, sqId;
+                        f >> hartId >> sqId;
+                        rv->memory->storeCommit(sqId);
                     } else if(str == "bro") {
                         u32 hartId, sqId;
                         f >> hartId >> sqId;

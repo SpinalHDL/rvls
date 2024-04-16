@@ -182,9 +182,18 @@ rvlsJniBool(loadFlush), int hartId){
 	}
 	return true;
 }
-rvlsJniBool(storeCommit), int hartId, long id, long addr, long len, long data){
+rvlsJniBool(storeExecute), int hartId, long id, long addr, long len, long data){
 	try{
-        rv->memory->storeCommit(id, addr, len, (u8*)&data);
+        rv->memory->storeExecute(id, addr, len, (u8*)&data);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
+}
+rvlsJniBool(storeCommit), int hartId, long id){
+	try{
+        rv->memory->storeCommit(id);
 	} catch (const std::exception &e) {
 		c->lastErrorMessage = e.what();
 	    return false;
