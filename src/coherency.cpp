@@ -130,7 +130,16 @@ void CpuMemoryView::store(u32 address,u32 length, const u8 *data){
     auto &store = *storeFresh; storeFresh = NULL;
     assertEq("Bad store addr", store.addr, address);
     assertEq("Bad store length", store.len, length);
-    if(memcmp(store.bytes, data, length)) throw std::runtime_error("store bad data ???");
+    if(memcmp(store.bytes, data, length)) {
+        printf("Got, expected:\n");
+        for(u32 i = 0; i < length; ++i)
+            printf("%02X ", store.bytes[i]);
+        printf("\n");
+        for(u32 i = 0; i < length; ++i)
+            printf("%02X ", data[i]);
+        printf("\n");
+        throw std::runtime_error("store bad data ???");
+    }
 
     //Bypass store values to inflight loads
     for(u64 i = 0; i < loadsInflightCount;i++){
