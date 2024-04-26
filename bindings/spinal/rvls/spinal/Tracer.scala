@@ -39,7 +39,8 @@ trait TraceBackend{
   def newCpuMemoryView(viewId : Int, readIds : Long, writeIds : Long)
   def newCpu(hartId : Int, isa : String, priv : String, physWidth : Int, memoryViewId : Int) : Unit
   def loadElf(offset : Long, path : File) : Unit
-  def loadBin(offset : Long, path : File) : Unit
+  def loadBin(offset: Long, path: File): Unit
+  def loadBytes(offset: Long, bytes: Array[Byte]): Unit
   def setPc(hartId : Int, pc : Long): Unit
   def writeRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
   def readRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
@@ -74,6 +75,7 @@ class DummyBackend() extends TraceBackend{
   override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, memoryViewId: Int) = {}
   override def loadElf(offset: Long, path: File) = {}
   override def loadBin(offset: Long, path: File) = {}
+  override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = {}
   override def setPc(hartId: Int, pc: Long) = {}
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
@@ -138,6 +140,11 @@ class FileBackend(f : File) extends TraceBackend{
   override def loadBin(offset: Long, path: File) = {
     log(f"bin load $offset%016x ${path.getAbsolutePath} \n")
   }
+
+  override def loadBytes(offset: Long, bytes: Array[Byte]) = {
+    log(f"bytes load $offset%016x ${bytes.map(v =>f"$v%02x")mkString(" ")} \n")
+  }
+
   override def setPc(hartId: Int, pc: Long) = {
     log(f"rv set pc $hartId $pc%016x\n")
   }
@@ -200,6 +207,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, memoryViewId: Int): Unit = Frontend.newCpu(handle, hartId, isa, priv, physWidth, memoryViewId)
   override def loadElf(offset: Long, path: File): Unit = Frontend.loadElf(handle, offset, path.getAbsolutePath)
   override def loadBin(offset: Long, path: File): Unit = Frontend.loadBin(handle, offset, path.getAbsolutePath)
+  override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = Frontend.loadBytes(handle, offset, bytes)
   override def setPc(hartId: Int, pc: Long): Unit = Frontend.setPc(handle, hartId, pc)
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)

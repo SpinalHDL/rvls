@@ -12,6 +12,11 @@ void Context::loadBin(std::string path, u64 offset){
     memory.loadBin(path, offset);
 }
 
+void Context::loadBytes(u64 offset, u32 length, u8* bytes){
+    memory.write(offset, length, bytes);
+}
+
+
 void Context::cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds){
     cpuMemoryViews.resize(max((size_t)(id+1), cpuMemoryViews.size()));
     cpuMemoryViews[id] = new CpuMemoryView(memory, readIds, writeIds);

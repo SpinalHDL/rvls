@@ -98,6 +98,13 @@ rvlsJni(loadBin), long offset, jstring path){
 	c->loadBin(toString(env, path), offset);
 }
 
+rvlsJni(loadBytes), long offset, jbyteArray array){
+	jbyte* bufferPtr = env->GetByteArrayElements(array, NULL);
+	jsize lengthOfArray = env->GetArrayLength(array);
+	c->loadBytes(offset, lengthOfArray, (u8*)bufferPtr);
+	env->ReleaseByteArrayElements(array, bufferPtr, 0);
+}
+
 rvlsJni(setPc), int hartId, long pc){
 	rv->setPc(pc);
 }

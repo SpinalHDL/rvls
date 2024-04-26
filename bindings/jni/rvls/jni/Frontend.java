@@ -17,6 +17,7 @@ public class Frontend  {
     public static native void newCpu(long handle, int hartId, String isa, String priv, int physWidth, int memoryViewId);
     public static native void loadElf(long handle, long offset, String path);
     public static native void loadBin(long handle, long offset, String path);
+    public static native void loadBytes(long handle, long offset, byte[] bytes);
     public static native void setPc(long handle, int hartId, long pc);
     public static native void writeRf(long handle, int hardId, int rfKind, int address, long data);
     public static native void readRf(long handle, int hardId, int rfKind, int address, long data);

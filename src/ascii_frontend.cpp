@@ -153,6 +153,19 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                 } else {
                     throw runtime_error(line);
                 }
+            } else if(str == "bytes"){
+                f >> str;
+                if(str == "load"){
+                    string path;
+                    u64 offset;
+                    f >> hex >> offset;
+                    for (u64 number; f >> hex >> number;) {
+                    	context.loadBytes(offset, 1, (u8*)&number);
+                    	offset += 1;
+                    }
+                } else {
+                    throw runtime_error(line);
+                }
             } else if(str == "memview"){
                 f >> str;
                 if(str == "new"){

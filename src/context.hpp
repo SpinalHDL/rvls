@@ -21,6 +21,7 @@ public:
 
     void loadElf(std::string path, u64 offset);
     void loadBin(std::string path, u64 offset);
+    void loadBytes(u64 offset, u32 length, u8* bytes);
     void cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds);
     void rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 viewId, FILE * logs);
     void close();
