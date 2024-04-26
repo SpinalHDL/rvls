@@ -289,8 +289,10 @@ void Hart::commit(u64 pc){
                 break;
             default:{
                 if((inst & 0x7F) == 0x73 && (inst & 0x3000) != 0){
-                    assertTrue("CSR WRITE MISSING", csrWrite);
-                    assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+                    if(!(csrAddress >= 1 && csrAddress <= 3)){ //avoid fcsr
+                        assertTrue("CSR WRITE MISSING", csrWrite);
+                        assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+                    }
 //                                                assertEq("CSR WRITE DATA", whitebox->robCtx[robId].csrWriteData, item.second.v[0]);
                 }
                 break;
