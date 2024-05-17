@@ -131,6 +131,8 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *me
     state = proc->get_state();
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
+    state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
+    state->csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, state->csrmap[CSR_MCYCLEH]);
 }
 
 void Hart::close() {
@@ -216,10 +218,12 @@ void Hart::commit(u64 pc){
     if(csrRead){
         switch(csrAddress){
         case CSR_MCYCLE:
-        case CSR_MCYCLEH:
         case CSR_UCYCLE:
+            state->csrmap[CSR_MCYCLE]->unlogged_write(csrReadData);
+            break;
+        case CSR_MCYCLEH:
         case CSR_UCYCLEH:
-            state->csrmap[csrAddress]->unlogged_write(csrReadData);
+            state->csrmap[CSR_MCYCLEH]->unlogged_write(csrReadData);
             break;
         case MIP:
         case SIP:
@@ -230,7 +234,7 @@ void Hart::commit(u64 pc){
 //                                cout << main_time << " " << hex << robCtx.csrReadData << " " << state->mip->read()  << " " << state->csrmap[robCtx.csrAddress]->read() << dec << endl;
             break;
         }
-        if(csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31){
+        if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31)){
             state->csrmap[csrAddress]->unlogged_write(csrReadData);
         }
     }
@@ -244,6 +248,7 @@ void Hart::commit(u64 pc){
         }
     }
 
+    long long instret = state->csrmap[CSR_MINSTRET]->read();
     //Run the spike model
     proc->step(1);
     memory->step();
