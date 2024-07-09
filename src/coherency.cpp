@@ -112,7 +112,7 @@ void CpuMemoryView::storeBroadcast(u64 id){
 
 
 //Spike interface
-void CpuMemoryView::load(u32 address,u32 length, u8 *data){
+void CpuMemoryView::load(u64 address,u32 length, u8 *data){
     if(!loadFresh)
         throw std::runtime_error("loadFresh wasn't NULL on check ???");
     if(!loadFresh->valid)
@@ -124,7 +124,7 @@ void CpuMemoryView::load(u32 address,u32 length, u8 *data){
     load.valid = false;
 }
 
-void CpuMemoryView::store(u32 address,u32 length, const u8 *data){
+void CpuMemoryView::store(u64 address,u32 length, const u8 *data){
     if(!storeFresh) throw std::runtime_error("storeFresh wasn't valid on check ???");
     //if(!storeFresh->executed) throw std::runtime_error("Store wasn't executed on check ???");
     auto &store = *storeFresh; storeFresh = NULL;
@@ -150,11 +150,11 @@ void CpuMemoryView::store(u32 address,u32 length, const u8 *data){
     }
 }
 
-void CpuMemoryView::fetch(u32 address,u32 length, u8 *data){
+void CpuMemoryView::fetch(u64 address,u32 length, u8 *data){
     memory.read(address, length, data);
 }
 
-void CpuMemoryView::mmu(u32 address,u32 length, u8 *data){
+void CpuMemoryView::mmu(u64 address,u32 length, u8 *data){
     memory.read(address, length, data);
 }
 

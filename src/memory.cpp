@@ -54,8 +54,8 @@ Memory::~Memory(){
     for(u32 i = 0;i < (1 << 12);i++) if(mem[i]) delete [] mem[i];
 }
 
-u8* Memory::get(u32 address){
-    u32 blockId = address >> 20;
+u8* Memory::get(u64 address){
+    u64 blockId = address >> 20;
     if(mem[blockId] == NULL) {
         u8* ptr = new u8[1024*1024];
         RandomGen rand;
@@ -66,19 +66,19 @@ u8* Memory::get(u32 address){
     return &mem[blockId][address & 0xFFFFF];
 }
 
-void Memory::read(u32 address,u32 length, u8 *data){
+void Memory::read(u64 address,u32 length, u8 *data){
     for(u32 i = 0;i < length;i++){
         data[i] = (*this)[address + i];
     }
 }
 
-void Memory::write(u32 address,u32 length, u8 *data){
+void Memory::write(u64 address,u32 length, u8 *data){
     for(u32 i = 0;i < length;i++){
         (*this)[address + i] = data[i];
     }
 }
 
-u8& Memory::operator [](u32 address) {
+u8& Memory::operator [](u64 address) {
     return *get(address);
 }
 

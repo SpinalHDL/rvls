@@ -74,9 +74,9 @@ public:
     void storeBroadcast(u64 id);
 
     //Spike interface
-    void fetch(u32 address,u32 length, u8 *data);
-    void mmu(u32 address,u32 length, u8 *data);
-    void load(u32 address,u32 length, u8 *data);
-    void store(u32 address,u32 length, const u8 *data);
+    void fetch(u64 address,u32 length, u8 *data);
+    void mmu(u64 address,u32 length, u8 *data);
+    void load(u64 address,u32 length, u8 *data);
+    void store(u64 address,u32 length, const u8 *data);
     void step();
 };
