@@ -13,6 +13,7 @@
 #include <iostream>
 #include <queue>
 #include <sstream>
+#include <fstream>
 
 #include "config.hpp"
 #include "type.h"

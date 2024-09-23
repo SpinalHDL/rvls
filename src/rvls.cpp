@@ -29,6 +29,10 @@ int main(int argc, char **argv){
         printf("Bad input file %s\n", config.asciiTraceFile.c_str());
         exit(1);
     }
+    if(f.eof()){
+        printf("Empty file %s\n", config.asciiTraceFile.c_str());
+        exit(1);
+    }
     checkFile(f, config);
 }
 
