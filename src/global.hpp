@@ -30,6 +30,10 @@
 #define MIE_MEIE (1 << CAUSE_MACHINE_EXTERNAL)
 #define MIE_MSIE (1 << CAUSE_MACHINE_SOFTWARE)
 #define MIE_SEIE (1 << CAUSE_SUPERVISOR_EXTERNAL)
+#define MVENDORID  0xF11 // MRO Vendor ID.
+#define MARCHID    0xF12 // MRO Architecture ID.
+#define MIMPID     0xF13 // MRO Implementation ID.
+#define MHARTID    0xF14 // MRO Hardware thread ID.Machine Trap Setup
 
 
 #define API __attribute__((visibility("default")))

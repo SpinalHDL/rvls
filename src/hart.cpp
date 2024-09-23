@@ -262,6 +262,22 @@ void Hart::commit(u64 pc){
         case UIP:
             state->mie->unlogged_write_with_mask(MIE_MTIE | MIE_MEIE |  MIE_MSIE | MIE_SEIE, csrBackup);
             break;
+        case MVENDORID:
+        case MARCHID:
+        case MIMPID:
+        case MHARTID:
+            for (auto &item : state->log_reg_write) {
+                if (item.first == 0)
+                  continue;
+                u32 rd = item.first >> 4;
+                switch (item.first & 0xf) {
+                case 0:  //integer
+                	item.second.v[0] = integerWriteData;
+                	state->XPR.write(rd, integerWriteData);
+					break;
+                }
+			}
+        	break;
         }
     }
 
