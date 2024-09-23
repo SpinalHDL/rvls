@@ -21,7 +21,7 @@ public:
 
 class Memory{
 public:
-	u8* mem[1 << 20];
+	u8** mem;
 	u64 seed = 0;
 	u64 randOffset = 0;
 

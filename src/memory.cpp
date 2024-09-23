@@ -47,11 +47,13 @@ void RandomGen::nextBytes(u8 *bytes, u64 len) {
 
 
 Memory::Memory(){
-    for(u32 i = 0;i < (1 << 12);i++) mem[i] = NULL;
+	mem = new u8*[1 << 20];
+    for(u32 i = 0;i < (1 << 20);i++) mem[i] = NULL;
 }
 
 Memory::~Memory(){
-    for(u32 i = 0;i < (1 << 12);i++) if(mem[i]) delete [] mem[i];
+    for(u32 i = 0;i < (1 << 20);i++) if(mem[i]) delete [] mem[i];
+    delete mem;
 }
 
 u8* Memory::get(u64 address){
