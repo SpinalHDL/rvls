@@ -12,8 +12,8 @@
 #include "disasm.h"
 
 
-static disassembler_t disasm32 = disassembler_t(32);
-static disassembler_t disasm64 = disassembler_t(64);
+//static disassembler_t disasm32 = disassembler_t(32);
+//static disassembler_t disasm64 = disassembler_t(64);
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,8 +37,8 @@ string toString(JNIEnv *env, jstring jstr){
     return str;
 }
 
-JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newDisassemble(JNIEnv * env, jobject obj, int xlen){
-    return  (jlong) new disassembler_t(xlen);
+JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newDisassemble(JNIEnv * env, jobject obj, long handle, int hartId){
+    return  (jlong) new disassembler_t(&rv->proc->get_isa());
 }
 
 JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_disassemble(JNIEnv * env, jobject obj, long handle, long instruction){

@@ -51,8 +51,10 @@ public:
     CpuMemoryView *memory;
     queue <TraceIo> ioQueue;
     vector<Region> regions;
+    const cfg_t * const cfg;
+    const std::map<size_t, processor_t*> harts;
 
-    SpikeIf(CpuMemoryView *memory);
+    SpikeIf(CpuMemoryView *memory, const cfg_t *cfg);
 
     virtual char* addr_to_mem(reg_t addr);
     virtual bool mmio_fetch(reg_t addr, size_t len, u8* bytes);
@@ -61,6 +63,8 @@ public:
     virtual bool mmio_store(reg_t addr, size_t len, const u8* bytes);
     virtual void proc_reset(unsigned id);
     virtual const char* get_symbol(uint64_t addr);
+    virtual const cfg_t& get_cfg() const override;
+    virtual const std::map<size_t, processor_t*>& get_harts() const override;
     bool isMem(u64 address);
     bool isIo(u64 address);
     bool isFetchable(u64 address);
@@ -69,6 +73,9 @@ public:
 
 class Hart{
 public:
+    std::string isa_hart;
+    std::string priv_hart;
+    cfg_t cfg;
     SpikeIf *sif;
     processor_t *proc;
     state_t *state;

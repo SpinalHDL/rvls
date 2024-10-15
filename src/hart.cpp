@@ -9,8 +9,9 @@
 
 
 
-SpikeIf::SpikeIf(CpuMemoryView *memory){
-    this->memory = memory;
+SpikeIf::SpikeIf(CpuMemoryView *memory, const cfg_t *cfg)
+    : memory(memory), cfg(cfg) {
+
 }
 
 Region* SpikeIf::getRegion(u64 address){
@@ -104,6 +105,14 @@ bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
 
     return false;
 }
+// Correct definition of get_cfg without virtual and override
+const cfg_t& SpikeIf::get_cfg() const {
+    return *cfg;
+}
+// Correct definition of get_harts without virtual and override
+const std::map<size_t, processor_t*>& SpikeIf::get_harts() const {
+    return harts;
+}
 // Callback for processors to let the simulation know they were reset.
 void SpikeIf::proc_reset(unsigned id)  {
 //        printf("proc_reset %d\n", id);
@@ -116,13 +125,19 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs)
+: isa_hart(isa), priv_hart(priv), cfg() // Initialiser le membre cfg
+{
     this->memory = memory;
     this->physWidth = physWidth;
-    sif = new SpikeIf(memory);
     std::ofstream outfile ("/dev/null",std::ofstream::binary);
-    proc = new processor_t(isa.c_str(), priv.c_str(), "", sif, hartId, false, logs, outfile);
-    auto xlen = proc->get_xlen();
+    this->cfg.isa = isa_hart.c_str();
+    this->cfg.priv = priv_hart.c_str(); 
+    this->cfg.misaligned = false;
+    this->cfg.pmpregions = 0;
+    this->cfg.hartids.push_back(hartId);
+    sif = new SpikeIf(memory, &this->cfg);
+    proc = new processor_t(isa_hart.c_str(), priv_hart.c_str(), &this->cfg, sif, hartId, false, logs, outfile);    auto xlen = proc->get_xlen();
     proc->set_impl(IMPL_MMU_SV32, xlen == 32);
     proc->set_impl(IMPL_MMU_SV39, xlen == 64);
     proc->set_impl(IMPL_MMU_SV48, false);
