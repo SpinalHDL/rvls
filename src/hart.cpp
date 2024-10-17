@@ -221,8 +221,9 @@ void Hart::trap(bool interrupt, u32 code){
 }
 
 void Hart::commit(u64 pc){
-	auto shift = 64-proc->get_xlen();
-    if(pc != (state->pc << shift >> shift)){
+	//auto shift = 64-proc->get_xlen();
+    //if(pc != (state->pc << shift >> shift)){
+    if(pc != state->pc ){
     	failure("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
     }
 
