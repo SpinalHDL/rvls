@@ -46,6 +46,7 @@ git clone https://github.com/SpinalHDL/riscv-isa-sim.git --recursive
 cd riscv-isa-sim
 mkdir build
 cd build
+# Optionaly add CFLAGS='-g -O0' CXXFLAGS='-g -O0'
 ../configure --prefix=$RISCV --enable-commitlog  --without-boost --without-boost-asio --without-boost-regex
 make -j$(nproc)
 cd ../..
