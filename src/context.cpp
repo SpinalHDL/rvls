@@ -22,8 +22,8 @@ void Context::cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds){
     cpuMemoryViews[id] = new CpuMemoryView(memory, readIds, writeIds);
 }
 
-void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 viewId, FILE *logs){
-    auto hart = new Hart(hartId, isa, priv, physWidth, cpuMemoryViews[viewId], logs);
+void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 pmpNum, u32 viewId, FILE *logs){
+    auto hart = new Hart(hartId, isa, priv, physWidth, pmpNum, cpuMemoryViews[viewId], logs);
     harts.resize(max((size_t)(hartId+1), harts.size()));
     harts[hartId] = hart;
     if(config.spikeDebug) hart->proc->debug = true;

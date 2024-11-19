@@ -14,7 +14,7 @@ public class Frontend  {
     public static native void spikeLogCommit(long handle, boolean enable) ;
 
     public static native void newCpuMemoryView(long handle, int viewId, long readIds, long writeIds);
-    public static native void newCpu(long handle, int hartId, String isa, String priv, int physWidth, int memoryViewId);
+    public static native void newCpu(long handle, int hartId, String isa, String priv, int physWidth, int pmpNum, int memoryViewId);
     public static native void loadElf(long handle, long offset, String path);
     public static native void loadBin(long handle, long offset, String path);
     public static native void loadBytes(long handle, long offset, byte[] bytes);

@@ -116,7 +116,7 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMemoryView *memory, FILE *logs){
     this->memory = memory;
     this->physWidth = physWidth;
     sif = new SpikeIf(memory);
@@ -127,7 +127,7 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *me
     proc->set_impl(IMPL_MMU_SV39, xlen == 64);
     proc->set_impl(IMPL_MMU_SV48, false);
     proc->set_impl(IMPL_MMU, true);
-    proc->set_pmp_num(0);
+    proc->set_pmp_num(pmpNum);
     state = proc->get_state();
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
@@ -309,16 +309,15 @@ void Hart::commit(u64 pc){
                 physExtends(state->pc);
                 break;
             default:{
-                if((inst & 0x7F) == 0x73 && (inst & 0x3000) != 0){
-                    if(!(csrAddress >= 1 && csrAddress <= 3)){ //avoid fcsr
-                        assertTrue("CSR WRITE MISSING", csrWrite);
-                        assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+                    if((inst & 0x7F) == 0x73 && (inst & 0x3000) != 0){
+                        if(!(csrAddress >= 1 && csrAddress <= 3)){ //avoid fcsr
+                            assertTrue("CSR WRITE MISSING", csrWrite);
+                            assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+                        }
+    //                                                assertEq("CSR WRITE DATA", whitebox->robCtx[robId].csrWriteData, item.second.v[0]);
                     }
-//                                                assertEq("CSR WRITE DATA", whitebox->robCtx[robId].csrWriteData, item.second.v[0]);
+                    break;
                 }
-                break;
-            }
-
             }
             csrWrite = false;
         } break;
@@ -329,9 +328,10 @@ void Hart::commit(u64 pc){
     }
 
     csrRead = false;
-    assertTrue("CSR WRITE SPAWNED", !csrWrite);
+    assertTrue("CSR WRITE SPAWNED", !csrWrite || (csrAddress >= 0x3b0 && csrAddress <= 0x3b0+64));
     assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
     assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
+    csrWrite = false;
 }
 
 void Hart::ioAccess(TraceIo io){

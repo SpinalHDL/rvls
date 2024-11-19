@@ -37,7 +37,7 @@ trait TraceBackend{
   }
 
   def newCpuMemoryView(viewId : Int, readIds : Long, writeIds : Long)
-  def newCpu(hartId : Int, isa : String, priv : String, physWidth : Int, memoryViewId : Int) : Unit
+  def newCpu(hartId : Int, isa : String, priv : String, physWidth : Int, pmpNum : Int, memoryViewId : Int) : Unit
   def loadElf(offset : Long, path : File) : Unit
   def loadBin(offset: Long, path: File): Unit
   def loadBytes(offset: Long, bytes: Array[Byte]): Unit
@@ -72,7 +72,7 @@ trait TraceBackend{
 
 class DummyBackend() extends TraceBackend{
   override def newCpuMemoryView(viewId: Int, readIds: Long, writeIds: Long) = {}
-  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, memoryViewId: Int) = {}
+  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, pmpNum : Int, memoryViewId: Int) = {}
   override def loadElf(offset: Long, path: File) = {}
   override def loadBin(offset: Long, path: File) = {}
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = {}
@@ -153,8 +153,8 @@ class FileBackend(f : File) extends TraceBackend{
     log(f"memview new $memoryViewId $readIds $writeIds\n")
   }
 
-  override def newCpu(hartId: Int, isa : String, priv : String, physWidth : Int, memoryViewId : Int) = {
-    log(f"rv new $hartId $isa $priv $physWidth $memoryViewId\n")
+  override def newCpu(hartId: Int, isa : String, priv : String, physWidth : Int, pmpNum : Int, memoryViewId : Int) = {
+    log(f"rv new $hartId $isa $priv $physWidth $pmpNum $memoryViewId\n")
   }
 
   override def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit = {
@@ -204,7 +204,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   }
 
   override def newCpuMemoryView(viewId: Int, readIds: Long, writeIds: Long): Unit = Frontend.newCpuMemoryView(handle, viewId, readIds, writeIds)
-  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, memoryViewId: Int): Unit = Frontend.newCpu(handle, hartId, isa, priv, physWidth, memoryViewId)
+  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, pmpNum : Int, memoryViewId: Int): Unit = Frontend.newCpu(handle, hartId, isa, priv, physWidth, pmpNum, memoryViewId)
   override def loadElf(offset: Long, path: File): Unit = Frontend.loadElf(handle, offset, path.getAbsolutePath)
   override def loadBin(offset: Long, path: File): Unit = Frontend.loadBin(handle, offset, path.getAbsolutePath)
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = Frontend.loadBytes(handle, offset, bytes)

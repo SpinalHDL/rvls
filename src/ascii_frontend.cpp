@@ -122,10 +122,10 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         throw runtime_error(line);
                     }
                 } else if(str == "new"){
-                    u32 hartId, physWidth, viewId;
+                    u32 hartId, physWidth, viewId, pmpNum;
                     string isa, priv;
-                    f >> hartId >> isa >> priv >> physWidth >> viewId;
-                    context.rvNew(hartId, isa, priv, physWidth, viewId, context.spikeLogs);
+                    f >> hartId >> isa >> priv >> physWidth >> pmpNum >> viewId;
+                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, viewId, context.spikeLogs);
                 } else {
                     throw runtime_error(line);
                 }
