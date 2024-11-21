@@ -122,6 +122,8 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     sif = new SpikeIf(memory);
     std::ofstream outfile ("/dev/null",std::ofstream::binary);
     proc = new processor_t(isa.c_str(), priv.c_str(), "", sif, hartId, false, logs, outfile);
+    proc->paddr_bits_sim = physWidth;
+    proc->lg_pmp_granularity = 12;
     auto xlen = proc->get_xlen();
     proc->set_impl(IMPL_MMU_SV32, xlen == 32);
     proc->set_impl(IMPL_MMU_SV39, xlen == 64);
@@ -129,6 +131,7 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     proc->set_impl(IMPL_MMU, true);
     proc->set_pmp_num(pmpNum);
     state = proc->get_state();
+    if(pmpNum > 0) state->csrmap[CSR_PMPADDR0]->unlogged_write(~reg_t(0));
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
     state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
