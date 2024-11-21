@@ -191,7 +191,7 @@ void Hart::readRf(u32 rfKind, u32 address, u64 data){
 }
 
 void Hart::physExtends(u64 &v){
-    v = (u64)(((s64)v<<(64-physWidth)) >> (64-physWidth));
+    //v = (u64)(((s64)v<<(64-physWidth)) >> (64-physWidth));
 }
 
 void Hart::trap(bool interrupt, u32 code){
