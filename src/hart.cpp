@@ -9,8 +9,9 @@
 
 
 
-SpikeIf::SpikeIf(CpuMemoryView *memory){
-    this->memory = memory;
+SpikeIf::SpikeIf(CpuMemoryView *memory, const cfg_t *cfg)
+    : memory(memory), cfg(cfg) {
+
 }
 
 Region* SpikeIf::getRegion(u64 address){
@@ -104,6 +105,14 @@ bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
 
     return false;
 }
+// Correct definition of get_cfg without virtual and override
+const cfg_t& SpikeIf::get_cfg() const {
+    return *cfg;
+}
+// Correct definition of get_harts without virtual and override
+const std::map<size_t, processor_t*>& SpikeIf::get_harts() const {
+    return harts;
+}
 // Callback for processors to let the simulation know they were reset.
 void SpikeIf::proc_reset(unsigned id)  {
 //        printf("proc_reset %d\n", id);
@@ -116,13 +125,19 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *memory, FILE *logs)
+: isa_hart(isa), priv_hart(priv), cfg() // Initialiser le membre cfg
+{
     this->memory = memory;
     this->physWidth = physWidth;
-    sif = new SpikeIf(memory);
     std::ofstream outfile ("/dev/null",std::ofstream::binary);
-    proc = new processor_t(isa.c_str(), priv.c_str(), "", sif, hartId, false, logs, outfile);
-    auto xlen = proc->get_xlen();
+    this->cfg.isa = isa_hart.c_str();
+    this->cfg.priv = priv_hart.c_str(); 
+    this->cfg.misaligned = false;
+    this->cfg.pmpregions = 0;
+    this->cfg.hartids.push_back(hartId);
+    sif = new SpikeIf(memory, &this->cfg);
+    proc = new processor_t(isa_hart.c_str(), priv_hart.c_str(), &this->cfg, sif, hartId, false, logs, outfile);    auto xlen = proc->get_xlen();
     proc->set_impl(IMPL_MMU_SV32, xlen == 32);
     proc->set_impl(IMPL_MMU_SV39, xlen == 64);
     proc->set_impl(IMPL_MMU_SV48, false);
@@ -148,19 +163,21 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
         integerWriteValid = true;
         integerWriteData = data;
         break;
+    case 1:
+        floatWriteValid = true;
+        floatWriteData = data;
+        break;
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
-            printf("duplicated CSR access \n");
-            failure();
+        	failure("duplicated CSR access \n");
         }
         csrAddress = address;
         csrWrite = true;
         csrWriteData = data;
         break;
     default:
-        printf("??? unknown RF trace \n");
-        failure();
-        break;
+    	failure("??? unknown RF trace \n");
+    	break;
     }
 
 }
@@ -170,16 +187,14 @@ void Hart::readRf(u32 rfKind, u32 address, u64 data){
     switch(rfKind){
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
-            printf("duplicated CSR access \n");
-            failure();
+        	failure("duplicated CSR access \n");
         }
         csrAddress = address;
         csrRead = true;
         csrReadData = data;
         break;
     default:
-        printf("??? unknown RF trace \n");
-        failure();
+    	failure("??? unknown RF trace \n");
         break;
     }
 
@@ -196,8 +211,7 @@ void Hart::trap(bool interrupt, u32 code){
     proc->step(1);
     if(interrupt) state->mip->write_with_mask(mask, 0);
     if(!state->trap_happened){
-        printf("DUT did trap on %lx\n", fromPc);
-        failure();
+        failure("DUT did trap on %lx\n", fromPc);
     }
 
     memory->step();
@@ -207,9 +221,10 @@ void Hart::trap(bool interrupt, u32 code){
 }
 
 void Hart::commit(u64 pc){
-    if(pc != state->pc){
-        printf("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
-        failure();
+	//auto shift = 64-proc->get_xlen();
+    //if(pc != (state->pc << shift >> shift)){
+    if(pc != state->pc ){
+    	failure("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
     }
 
     //Sync CSR
@@ -275,6 +290,11 @@ void Hart::commit(u64 pc){
             assertEq("INTEGER WRITE MISSMATCH", integerWriteData, item.second.v[0]);
             integerWriteValid = false;
         } break;
+        case 1: { //float
+            assertTrue("FLOAT WRITE MISSING", floatWriteValid);
+            assertEq("FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
+            floatWriteValid = false;
+        } break;
         case 4:{ //CSR
             u64 inst = state->last_inst.bits();
             switch(inst){
@@ -296,8 +316,7 @@ void Hart::commit(u64 pc){
             csrWrite = false;
         } break;
         default: {
-            printf("??? unknown spike trace %lx\n", item.first & 0xf);
-            failure();
+            failure("??? unknown spike trace %lx\n", item.first & 0xf);
         } break;
         }
     }
@@ -305,6 +324,7 @@ void Hart::commit(u64 pc){
     csrRead = false;
     assertTrue("CSR WRITE SPAWNED", !csrWrite);
     assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
+    assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
 }
 
 void Hart::ioAccess(TraceIo io){

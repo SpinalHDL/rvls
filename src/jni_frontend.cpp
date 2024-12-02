@@ -12,8 +12,8 @@
 #include "disasm.h"
 
 
-static disassembler_t disasm32 = disassembler_t(32);
-static disassembler_t disasm64 = disassembler_t(64);
+//static disassembler_t disasm32 = disassembler_t(32);
+//static disassembler_t disasm64 = disassembler_t(64);
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +24,7 @@ jmethodID methodId;
 
 #define rvlsJni(n) JNIEXPORT void JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
 #define rvlsJniBool(n) JNIEXPORT bool JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
+#define rvlsJniString(n) JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
 
 #define c ((Context*)handle)
 #define rv c->harts[hartId]
@@ -36,8 +37,8 @@ string toString(JNIEnv *env, jstring jstr){
     return str;
 }
 
-JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newDisassemble(JNIEnv * env, jobject obj, int xlen){
-    return  (jlong) new disassembler_t(xlen);
+JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newDisassemble(JNIEnv * env, jobject obj, long handle, int hartId){
+    return  (jlong) new disassembler_t(&rv->proc->get_isa());
 }
 
 JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_disassemble(JNIEnv * env, jobject obj, long handle, long instruction){
@@ -111,8 +112,7 @@ rvlsJniBool(commit), int hartId, long pc) {
 	try{
 		rv->commit(pc);
 	} catch (const std::exception &e) {
-		printf("commit error\n");
-		printf("- %s\n", e.what());
+		c->lastErrorMessage = e.what();
 	    return false;
 	}
 	return true;
@@ -121,12 +121,19 @@ rvlsJniBool(trap), int hartId, jboolean interrupt, int code) {
 	try{
 		rv->trap(interrupt, code);
 	} catch (const std::exception &e) {
-		printf("commit error\n");
-		printf("- %s\n", e.what());
+		c->lastErrorMessage = e.what();
 	    return false;
 	}
 	return true;
 }
+
+rvlsJniString(getLastErrorMessage)) {
+	std::string str = c->lastErrorMessage;
+	jstring result = env->NewStringUTF(str.c_str());
+	return result;
+}
+
+
 rvlsJni(ioAccess), int hartId, jboolean write, long address, long data, int mask, int size, jboolean error){
 	TraceIo a;
 	a.write = write;
@@ -148,23 +155,59 @@ rvlsJni(addRegion), int hartId, int kind, long base, long size){
 	r.size = size;
     rv->addRegion(r);
 }
-rvlsJni(loadExecute), int hartId, long id, long addr, long len, long data){
-    rv->memory->loadExecute(id, addr, len, (u8*)&data);
+rvlsJniBool(loadExecute), int hartId, long id, long addr, long len, long data){
+	try{
+        rv->memory->loadExecute(id, addr, len, (u8*)&data);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(loadCommit), int hartId, long id){
-    rv->memory->loadCommit( id);
+rvlsJniBool(loadCommit), int hartId, long id){
+	try{
+        rv->memory->loadCommit( id);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(loadFlush), int hartId){
-    rv->memory->loadFlush();
+rvlsJniBool(loadFlush), int hartId){
+	try{
+        rv->memory->loadFlush();
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(storeCommit), int hartId, long id, long addr, long len, long data){
-    rv->memory->storeCommit(id, addr, len, (u8*)&data);
+rvlsJniBool(storeCommit), int hartId, long id, long addr, long len, long data){
+	try{
+        rv->memory->storeCommit(id, addr, len, (u8*)&data);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(storeBroadcast), int hartId, long id){
-    rv->memory->storeBroadcast(id);
+rvlsJniBool(storeBroadcast), int hartId, long id){
+	try{
+        rv->memory->storeBroadcast(id);
+	} catch (const std::exception &e) {
+		c->lastErrorMessage = e.what();
+	    return false;
+	}
+	return true;
 }
-rvlsJni(storeConditional), int hartId, jboolean failure){
-    rv->scStatus(failure);
+rvlsJniBool(storeConditional), int hartId, jboolean failure){
+    try{
+        rv->scStatus(failure);
+    } catch (const std::exception &e) {
+        c->lastErrorMessage = e.what();
+        return false;
+    }
+    return true;
 }
 
 

@@ -13,16 +13,27 @@ class TraceIo (var write: Boolean,
                var mask: Int,
                var size: Int,
                var error: Boolean){
+
+  def this(){
+    this(false, 0l, 0l, 0, 0, false)
+  }
   def serialized() = f"${write.toInt} $address%016x $data%016x $mask%02x $size ${error.toInt}"
 }
+
 trait TraceBackend{
-  def spinalSimFlusher(period: Long): Unit = {
+  def spinalSimFlusher(period: Long): this.type = {
     periodicaly(period)(flush())
     onSimEnd(close())
+    this
   }
 
   def spinalSimTime(period: Long): Unit = {
     periodicaly(period)(time(simTime()))
+  }
+
+  def spinalSimPeriod(period : Long) = {
+    spinalSimFlusher(period)
+    spinalSimTime(period)
   }
 
   def newCpuMemoryView(viewId : Int, readIds : Long, writeIds : Long)
@@ -187,17 +198,21 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def setPc(hartId: Int, pc: Long): Unit = Frontend.setPc(handle, hartId, pc)
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
-  override def commit(hartId: Int, pc: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) throw new Exception()
-  override def trap(hartId: Int, interrupt: Boolean, code: Int): Unit = if(!Frontend.trap(handle, hartId, interrupt, code)) throw new Exception()
+  override def commit(hartId: Int, pc: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {
+    throw new Exception(Frontend.getLastErrorMessage(handle))
+  }
+  override def trap(hartId: Int, interrupt: Boolean, code: Int): Unit = if(!Frontend.trap(handle, hartId, interrupt, code)) {
+    throw new Exception(Frontend.getLastErrorMessage(handle))
+  }
   override def ioAccess(hartId: Int, access: TraceIo): Unit = Frontend.ioAccess(handle, hartId, access.write, access.address, access.data, access.mask, access.size, access.error)
   override def setInterrupt(hartId: Int, intId: Int, value: Boolean): Unit = Frontend.setInterrupt(handle, hartId, intId, value)
   override def addRegion(hartId: Int, kind: Int, base: Long, size: Long): Unit = Frontend.addRegion(handle, hartId, kind, base, size)
-  override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = Frontend.loadExecute(handle, hartId, id, addr, len, data)
-  override def loadCommit(hartId: Int, id: Long): Unit = Frontend.loadCommit(handle, hartId, id)
-  override def loadFlush(hartId: Int): Unit = Frontend.loadFlush(handle, hartId)
-  override def storeCommit(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = Frontend.storeCommit(handle, hartId, id, addr, len, data)
-  override def storeBroadcast(hartId: Int, id: Long): Unit = Frontend.storeBroadcast(handle, hartId, id)
-  override def storeConditional(hartId: Int, failure: Boolean): Unit = Frontend.storeConditional(handle, hartId, failure)
+  override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.loadExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def loadCommit(hartId: Int, id: Long): Unit = if(!Frontend.loadCommit(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def loadFlush(hartId: Int): Unit = if(!Frontend.loadFlush(handle, hartId)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def storeCommit(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.storeCommit(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def storeBroadcast(hartId: Int, id: Long): Unit = if(!Frontend.storeBroadcast(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def storeConditional(hartId: Int, failure: Boolean): Unit = if(!Frontend.storeConditional(handle, hartId, failure)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def time(value: Long): Unit = Frontend.time(handle, value)
 
 }
