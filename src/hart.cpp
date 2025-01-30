@@ -70,7 +70,6 @@ bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
     }
     if(isIo(addr)){
     //        printf("mmio_load %lx %ld\n", addr, len);
-        if(addr < 0x10000000 || addr > 0x20000000) return false;
         assertTrue("missing mmio\n", !ioQueue.empty());
         auto dut = ioQueue.front();
         assertEq("mmio write\n", dut.write, false);
@@ -91,7 +90,6 @@ bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
 
     if(isIo(addr)){
     //        printf("mmio_store %lx %ld\n", addr, len);
-        if(addr < 0x10000000 || addr > 0x20000000) return false;
         assertTrue("missing mmio\n", !ioQueue.empty());
         auto dut = ioQueue.front();
         assertEq("mmio write\n", dut.write, true);
@@ -237,7 +235,8 @@ void Hart::commit(u64 pc){
 //                                cout << main_time << " " << hex << robCtx.csrReadData << " " << state->mip->read()  << " " << state->csrmap[robCtx.csrAddress]->read() << dec << endl;
             break;
         }
-        if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31)){
+        if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31) ||
+           (csrAddress >= CSR_MHPMCOUNTER3H && csrAddress <= CSR_MHPMCOUNTER31H) || (csrAddress >= CSR_HPMCOUNTER3H && csrAddress <= CSR_HPMCOUNTER31H)){
             state->csrmap[csrAddress]->unlogged_write(csrReadData);
         }
     }
@@ -331,7 +330,7 @@ void Hart::commit(u64 pc){
     }
 
     csrRead = false;
-    assertTrue("CSR WRITE SPAWNED", !csrWrite || (csrAddress >= 0x3b0 && csrAddress <= 0x3b0+64));
+    assertTrue("CSR WRITE SPAWNED", !csrWrite || (csrAddress >= 0x3b0 && csrAddress <= 0x3b0+63) || (csrAddress >= 0xb80 && csrAddress <= 0xb80+15) || (csrAddress == CSR_MCOUNTINHIBIT));
     assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
     assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
     csrWrite = false;
