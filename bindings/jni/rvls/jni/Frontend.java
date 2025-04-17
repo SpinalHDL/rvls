@@ -39,6 +39,10 @@ public class Frontend  {
     public static native void close(long handle);
 
     static {
-        System.load(new File("ext/rvls/build/apps/rvls.so").getAbsolutePath());
+        if (System.getenv().containsKey("MILL_WORKSPACE_ROOT")) {
+            System.load(new File(System.getenv("MILL_WORKSPACE_ROOT") + "/ext/rvls/build/apps/rvls.so").getAbsolutePath());
+        } else {
+            System.load(new File("ext/rvls/build/apps/rvls.so").getAbsolutePath());
+        }
     }
 }
