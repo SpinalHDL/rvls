@@ -11,10 +11,10 @@ RVLS (Risc-V Lock Step) is a CPU simulation trace checker.
 
 See [example/simple/trace.log](example/simple/trace.log) for an example of ASCII trace which can be checked by RVLS
 
-RVLS is used to check the behaviour of multicore NaxRiscv. 
+RVLS is used to check the behavior of multicore NaxRiscv. 
 NaxRiscv use a Write-Back L1 data cache, with tilelink to provide memory coherency between the cores, using a MESI protocol (https://en.wikipedia.org/wiki/MESI_protocol)
 
-Not everything is strictly keept in sync, noticibly, it assumes that :
+Not everything is strictly kept in sync, noticeably, it assumes that :
 - The software and fence.i  keep the hardware L1 instruction cache coherent
 - The software and sfence keep the hardware MMU TLB coherent
 
@@ -42,10 +42,12 @@ sudo cp -R elfio /usr/include
 git clone https://github.com/SpinalHDL/rvls.git
 git clone https://github.com/SpinalHDL/riscv-isa-sim.git --recursive
 
-# Compile riscv-isa-sim (spike), used as a golden model during the sim to check the dut behaviour (lock-step)
+# Compile riscv-isa-sim (spike), used as a golden model during the sim to check the dut behavior (lock-step)
 cd riscv-isa-sim
 mkdir build
 cd build
+
+# Optionally add CFLAGS='-g -O0' CXXFLAGS='-g -O0'
 ../configure --prefix=$RISCV --enable-commitlog  --without-boost --without-boost-asio --without-boost-regex
 make -j$(nproc)
 cd ../..
@@ -63,7 +65,7 @@ head -10 spike.log
 
 You can find the Java JNI interface in the [bindings/jni/rvls/jni/Frontend.java](bindings/jni/rvls/jni/Frontend.java) folder. It works in a very similar to the ASCII frontend excepted for the followings : 
 - Commands a provided via JNI calls (no file involved)
-- Allows to check the behaviour of the SoC durring the simulation itself (lock-step) 
+- Allows to check the behavior of the SoC during the simulation itself (lock-step) 
 
 # ASCII frontend
 
@@ -75,7 +77,7 @@ See [example/simple/trace.log](example/simple/trace.log) for an example of trace
 ## General commands
 
 `time $value`
-- Used to provide some sporatic timestap, just for debug purposes
+- Used to provide some sporadic timestamp, just for debug purposes
 
 ## Memory commands
 
@@ -91,7 +93,7 @@ See [example/simple/trace.log](example/simple/trace.log) for an example of trace
 
 ## RISC-V commands
 
-There mostly 3 kind of RISC-V related commands :
+There are mostly 3 kinds of RISC-V related commands :
 - The generals ones, to create a CPU / commit / trap
 - The ones to trace a register file read / write
 - The ones which are related to memory load / stores
@@ -113,7 +115,7 @@ There mostly 3 kind of RISC-V related commands :
 - Used once after reset to specify where the CPU PC landed
 
 `rv commit $hartId $pc_hex`
-- Specify when a given hart commited an instruction
+- Specify when a given hart committed an instruction
 
 `rv trap $hartId $interrupt $code`
 - Used for exception and interrupts traps
@@ -135,11 +137,11 @@ There mostly 3 kind of RISC-V related commands :
 
 ### Load/Store commands
 `rv load exe $hartId $id $size $addr_hex $data_hex`
-- load exe meaning "the moment at which the CPU readed a load value from the cache for a given LQ id"
+- load exe meaning "the moment at which the CPU read a load value from the cache for a given LQ id"
 - This is used by the cpu memory view to precisely figure out the memory ordering against other CPUs.
 
 `rv load com $hartId $id`
-- load com meaning "the moment at which a given memory load is commited"
+- load com meaning "the moment at which a given memory load is committed"
 - should precede the related `rv commit` command
 
 `rv load flu $hartId`
@@ -151,7 +153,7 @@ There mostly 3 kind of RISC-V related commands :
 
 `rv store bro $hartId $id`
 - store bro meaning "A memory store broadcast"
-- Make the related store visible to all other memory views (used for memory ordering accross CPUs)
+- Make the related store visible to all other memory views (used for memory ordering across CPUs)
 
 `rv store sc $hartId $failure`
 - Specify if a given "store conditional" succeeded
