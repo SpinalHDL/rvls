@@ -132,7 +132,7 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *me
     this->physWidth = physWidth;
     std::ofstream outfile ("/dev/null",std::ofstream::binary);
     this->cfg.isa = isa_hart.c_str();
-    this->cfg.priv = priv_hart.c_str(); 
+    this->cfg.priv = priv_hart.c_str();
     this->cfg.misaligned = false;
     this->cfg.pmpregions = 0;
     this->cfg.hartids.push_back(hartId);
@@ -146,6 +146,12 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, CpuMemoryView *me
     state = proc->get_state();
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
+    for(int i = 0;i < 32;i++){
+        float128_t tmp;
+        tmp.v[0] = -1;
+        tmp.v[1] = -1;
+        state->FPR.write(i, tmp);
+    }
 }
 
 void Hart::close() {
@@ -168,6 +174,11 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
         floatWriteData = data;
         break;
     case 4:
+        if((csrAddress == CSR_FCSR || csrAddress == CSR_FRM || csrAddress == CSR_FFLAGS) && address == CSR_MSTATUS){
+            fsDirty = true;
+            fsCsrAddress = address;
+            break;
+        }
         if((csrWrite || csrRead) && csrAddress != address){
         	failure("duplicated CSR access \n");
         }
@@ -201,16 +212,41 @@ void Hart::readRf(u32 rfKind, u32 address, u64 data){
 }
 
 void Hart::physExtends(u64 &v){
-    v = (u64)(((s64)v<<(64-physWidth)) >> (64-physWidth));
+    //v = (u64)(((s64)v<<(64-physWidth)) >> (64-physWidth));
+    auto xlen = proc->get_xlen();
+    if(xlen == 32){
+        v = (u64)(((s64)v<<(64-physWidth)) >> (64-physWidth));
+    }
+    else{
+        v = (s64)v;
+    }
 }
 
-void Hart::trap(bool interrupt, u32 code){
+void Hart::trap(bool interrupt, u32 code, u64 address){
     int mask = 1 << code;
     auto fromPc = state->pc;
+    bool pageFault = !interrupt && (code == 12 || code == 13 || code == 15);
+//    printf("DUT did trap at tval: 0x%lx pc: %lx code %d\n", address, fromPc, code);
+     if(pageFault){
+        auto mmu = proc->get_mmu();
+        mmu->flush_tlb();
+        mmu->fault_fetch = code == 12;
+        mmu->fault_load  = code == 13;
+        mmu->fault_store = code == 15;
+        mmu->fault_address = address;
+    }
+
     if(interrupt) state->mip->write_with_mask(mask, mask);
     proc->step(1);
     if(interrupt) state->mip->write_with_mask(mask, 0);
+    if(pageFault){
+        auto mmu = proc->get_mmu();
+        mmu->fault_fetch = false;
+        mmu->fault_load  = false;
+        mmu->fault_store = false;
+    }
     if(!state->trap_happened){
+//        printf("DUT did trap on %lx Code %d\n", fromPc, code);
         failure("DUT did trap on %lx\n", fromPc);
     }
 
@@ -221,8 +257,8 @@ void Hart::trap(bool interrupt, u32 code){
 }
 
 void Hart::commit(u64 pc){
-	//auto shift = 64-proc->get_xlen();
-    //if(pc != (state->pc << shift >> shift)){
+//	auto shift = 64-proc->get_xlen();
+//  if(pc != (state->pc << shift >> shift)){
     if(pc != state->pc ){
     	failure("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
     }
@@ -260,6 +296,10 @@ void Hart::commit(u64 pc){
         }
     }
 
+//    Check
+//    printf("**************************************************\n");
+//    printf("PC = %016lx, ref=%lx, INST = %08lx\n", pc, state->pc, state->last_inst.bits());
+
     //Run the spike model
     proc->step(1);
     memory->step();
@@ -267,6 +307,7 @@ void Hart::commit(u64 pc){
     //Sync back some CSR
     state->mip->unlogged_write_with_mask(-1, 0);
     if(csrRead){
+//        printf("Debug: CSR read - address: %x, data: %lx\n", csrAddress, csrReadData);
         switch(csrAddress){
         case MIP:
         case SIP:
@@ -278,53 +319,76 @@ void Hart::commit(u64 pc){
 
     //Checks
 //        printf("%016lx %08lx\n", pc, state->last_inst.bits());
-    assertTrue("DUT missed a trap", !state->trap_happened);
-    for (auto item : state->log_reg_write) {
-        if (item.first == 0)
-          continue;
+    assertTrue("DUT missed a trap", !((u32)state->trap_happened));
+    int i = 0;
+   for (auto item : state->log_reg_write) {
+//    printf("LOG N°%u :Debug: LOOP rd = %u, data = %lx, dut_floatData: %lx, dut_floatValid: %u\n", i, (u32)item.first >> 4, item.second.v[0], floatWriteData, floatWriteValid);
+    if (item.first == 0)
+        continue;
 
-        u32 rd = item.first >> 4;
-        switch (item.first & 0xf) {
-        case 0: { //integer
-            assertTrue("INTEGER WRITE MISSING", integerWriteValid);
-            assertEq("INTEGER WRITE MISSMATCH", integerWriteData, item.second.v[0]);
-            integerWriteValid = false;
-        } break;
-        case 1: { //float
-            assertTrue("FLOAT WRITE MISSING", floatWriteValid);
-            assertEq("FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
-            floatWriteValid = false;
-        } break;
-        case 4:{ //CSR
-            u64 inst = state->last_inst.bits();
-            switch(inst){
-            case 0x30200073: //MRET
-            case 0x10200073: //SRET
-            case 0x00200073: //URET
-                physExtends(state->pc);
-                break;
-            default:{
-                if((inst & 0x7F) == 0x73 && (inst & 0x3000) != 0){
-                    assertTrue("CSR WRITE MISSING", csrWrite);
-                    assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
-//                                                assertEq("CSR WRITE DATA", whitebox->robCtx[robId].csrWriteData, item.second.v[0]);
-                }
-                break;
-            }
+    i += 1;
 
-            }
-            csrWrite = false;
-        } break;
+    u32 rd = item.first >> 4;
+
+//    printf("LOG N°%u :Debug: LOOP rd = %u, data = %lx, dut_floatData: %lx, dut_floatValid: %u\n", i, rd, item.second.v[0], floatWriteData, floatWriteValid);
+
+    switch (item.first & 0xf) {
+    case 0: { //integer
+//        printf("Debug: Integer write detected, rd = %u, data = %lx, dut_integerData: %lx\n", rd, item.second.v[0], integerWriteData);
+        assertTrue("INTEGER WRITE MISSING", integerWriteValid);
+        assertEq("INTEGER WRITE MISSMATCH", integerWriteData, item.second.v[0]);
+        integerWriteValid = false;
+    } break;
+
+    case 1: { //float
+//        printf("item.second.v[0] = %lx, item.second.v[1] = %lx\n",item.second.v[0], item.second.v[1]);
+//        printf("Debug: Float write detected, rd = %u, data = %lx, dut_floatData: %lx, dut_floatValid: %u\n", rd, item.second.v[0], floatWriteData, floatWriteValid);
+        assertTrue("FLOAT WRITE MISSING", floatWriteValid);
+        assertEq("FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
+        floatWriteValid = false;
+    } break;
+
+    case 4: { //CSR
+        u64 inst = state->last_inst.bits();
+//        printf("Debug: CSR write detected, inst = %lx, rd = %u\n", inst, rd);
+
+        switch (inst) {
+        case 0x30200073: // MRET
+        case 0x10200073: // SRET
+        case 0x00200073: // URET
+//            printf("Debug: Handling MRET/SRET/URET instruction\n");
+            physExtends(state->pc);
+            break;
         default: {
-            failure("??? unknown spike trace %lx\n", item.first & 0xf);
-        } break;
-        }
-    }
+            if ((inst & 0x7F) == 0x73 && (inst & 0x3000) != 0) {
+//                printf("Debug: CSR instruction detected, inst = %lx, CSR address = %x\n", inst, csrAddress);
 
-    csrRead = false;
-    assertTrue("CSR WRITE SPAWNED", !csrWrite);
-    assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
-    assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
+                if ((inst >> 20) == CSR_FCSR || (inst >> 20) == CSR_FRM || (inst >> 20) == CSR_FFLAGS) {
+                    if (rd != CSR_MSTATUS) {
+                        assertTrue("CSR WRITE MISSING", csrWrite);
+                        assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+//                                                assertEq("CSR WRITE DATA", whitebox->robCtx[robId].csrWriteData, item.second.v[0]);
+                    }
+                    break;
+                }
+                assertTrue("CSR WRITE MISSING", csrWrite);
+                assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+            }
+            break;
+        }
+        }
+        csrWrite = false;
+    } break;
+    default: {
+        failure("??? unknown spike trace %lx\n", item.first & 0xf);
+    } break;
+    }
+}
+
+csrRead = false;
+assertTrue("CSR WRITE SPAWNED", !csrWrite);
+assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
+assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
 }
 
 void Hart::ioAccess(TraceIo io){
@@ -341,5 +405,6 @@ void Hart::scStatus(bool failure){
 }
 
 void Hart::addRegion(Region r){
+//    printf("Type: %d Base %lx Size %lx\n", r.type, r.base, r.size);
     sif->regions.push_back(r);
 }

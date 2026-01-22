@@ -18,7 +18,7 @@ public:
     FILE *spikeLogs;
     u64 time = 0xFFFFFFFFFFFFFFFF;
     std::string lastErrorMessage;
-
+    void loadU32(u64 address, u32 data);
     void loadElf(std::string path, u64 offset);
     void loadBin(std::string path, u64 offset);
     void cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds);
