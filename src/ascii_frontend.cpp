@@ -82,9 +82,10 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     rv->ioAccess(io);
                 } else if (str == "trap") {
                     u32 hartId, code;
+                    u64 address;
                     bool interrupt;
-                    f >> hartId >> interrupt >> code;
-                    rv->trap(interrupt, code);
+                    f >> hartId >> interrupt >> code >> address;
+                    rv->trap(interrupt, code, address);
                 } else if (str == "int") {
                     f >> str;
                     if(str == "set") {

@@ -96,6 +96,9 @@ public:
     u64 csrWriteData = 0;
     u64 csrReadData = 0;
 
+    u32 fsCsrAddress = 0;
+    bool fsDirty = false;
+
     bool scValid = false;
     bool scFailure = false;
 
@@ -106,7 +109,7 @@ public:
     void writeRf(u32 rfKind, u32 address, u64 data);
     void readRf(u32 rfKind, u32 address, u64 data);
     void physExtends(u64 &v);
-    void trap(bool interrupt, u32 code);
+    void trap(bool interrupt, u32 code, u64 address);
     void commit(u64 pc);
     void ioAccess(TraceIo io);
     void setInt(u32 id, bool value);

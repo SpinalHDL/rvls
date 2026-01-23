@@ -7,7 +7,7 @@ public class Frontend  {
     public static native void deleteDisassemble(long handle);
     public static native String disassemble(long handle, long instruction);
     
-    public static native long newContext(String workspace);
+    public static native long newContext(String workspace, boolean spikeLogFileOut);
     public static native void deleteContext(long handle);
 
     public static native void spikeDebug(long handle, boolean enable);
@@ -16,12 +16,13 @@ public class Frontend  {
     public static native void newCpuMemoryView(long handle, int viewId, long readIds, long writeIds);
     public static native void newCpu(long handle, int hartId, String isa, String priv, int physWidth, int memoryViewId);
     public static native void loadElf(long handle, long offset, String path);
+    public static native void loadU32(long handle, long address,  int data);
     public static native void loadBin(long handle, long offset, String path);
     public static native void setPc(long handle, int hartId, long pc);
     public static native void writeRf(long handle, int hardId, int rfKind, int address, long data);
     public static native void readRf(long handle, int hardId, int rfKind, int address, long data);
     public static native boolean commit(long handle, int hartId, long pc);
-    public static native boolean trap(long handle, int hartId, boolean interrupt, int code);
+    public static native boolean trap(long handle, int hartId, boolean interrupt, int code, long fault_addr);
     public static native String getLastErrorMessage(long handle);
     public static native void ioAccess(long handle, int hartId, boolean write, long address, long data, int mask, int size, boolean error);
     public static native void setInterrupt(long handle, int hartId, int intId, boolean value);

@@ -1,5 +1,10 @@
 #include "context.hpp"
 
+void Context::loadU32(u64 address, u32 data){
+    memory.write(address, 4, (uint8_t*)&data);
+}
+
+
 void Context::loadElf(std::string path, u64 offset){
     auto elf = new Elf(path.c_str());
     elf->visitBytes([&](u8 data, u64 address) {
