@@ -14,7 +14,7 @@ SPIKE_OBJS:= libspike_main.a  libriscv.a  libdisasm.a  libsoftfloat.a  libfesvr.
 SPIKE_OBJS:=$(addprefix ${SPIKE_BUILD}/,${SPIKE_OBJS})
 LDFLAGS+=${SPIKE_OBJS}
 LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-LIBRARIES += -lpthread -ldl -lboost_regex -lboost_system -lpthread  -lboost_system -lboost_regex 
+LIBRARIES += -lpthread -ldl -lboost_regex -lpthread  -lboost_regex 
 
 INCLUDE += -I$(realpath ${SPIKE}/riscv)
 INCLUDE += -I$(realpath ${SPIKE}/fesvr)
