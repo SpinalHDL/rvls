@@ -44,7 +44,7 @@ trait TraceBackend{
   def setPc(hartId : Int, pc : Long): Unit
   def writeRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
   def readRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
-  def commit(hartId : Int, pc : Long): Unit
+  def commit(hartId : Int, pc : Long, instruction : Long): Unit
   def trap(hartId: Int, interrupt : Boolean, code : Int)
   def ioAccess(hartId: Int, access : TraceIo) : Unit
   def setInterrupt(hartId : Int, intId : Int, value : Boolean) : Unit
@@ -79,7 +79,7 @@ class DummyBackend() extends TraceBackend{
   override def setPc(hartId: Int, pc: Long) = {}
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
-  override def commit(hartId: Int, pc: Long) = {}
+  override def commit(hartId: Int, pc: Long, instruction : Long) = {}
   override def trap(hartId: Int, interrupt: Boolean, code: Int) = {}
   override def ioAccess(hartId: Int, access: TraceIo) = {}
   override def setInterrupt(hartId: Int, intId: Int, value: Boolean) = {}
@@ -105,8 +105,8 @@ class FileBackend(f : File) extends TraceBackend{
 //    println(line)
   }
 
-  override def commit(hartId: Int, pc: Long) = {
-    log(f"rv commit $hartId $pc%016x\n")
+  override def commit(hartId: Int, pc: Long, instruction: Long) = {
+    log(f"rv commit $hartId $pc%016x $instruction%08x\n")
   }
 
   override def trap(hartId: Int, interrupt : Boolean, code : Int): Unit ={
@@ -171,7 +171,7 @@ class FileBackend(f : File) extends TraceBackend{
   }
   override def storeCommit(hartId: Int, id : Long) : Unit = {
     log(f"rv store com $hartId $id\n")
-  }  
+  }
   override def storeBroadcast(hartId: Int, id : Long) : Unit = {
     log(f"rv store bro $hartId $id\n")
   }
@@ -211,7 +211,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def setPc(hartId: Int, pc: Long): Unit = Frontend.setPc(handle, hartId, pc)
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
-  override def commit(hartId: Int, pc: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {
+  override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {
     throw new Exception(Frontend.getLastErrorMessage(handle))
   }
   override def trap(hartId: Int, interrupt: Boolean, code: Int): Unit = if(!Frontend.trap(handle, hartId, interrupt, code)) {
