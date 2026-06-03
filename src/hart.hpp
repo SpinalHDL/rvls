@@ -11,8 +11,11 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <fstream>
+#include <map>
 #include <queue>
 #include <sstream>
+#include <vector>
 #include "global.hpp"
 #include "memory.hpp"
 #include "processor.h"
@@ -51,15 +54,20 @@ public:
     CpuMemoryView *memory;
     queue <TraceIo> ioQueue;
     vector<Region> regions;
+    cfg_t cfg;
+    map<size_t, processor_t*> harts;
 
     SpikeIf(CpuMemoryView *memory);
 
     virtual char* addr_to_mem(reg_t addr);
+    virtual bool reservable(reg_t addr);
     virtual bool mmio_fetch(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_mmu(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_load(reg_t addr, size_t len, u8* bytes);
     virtual bool mmio_store(reg_t addr, size_t len, const u8* bytes);
     virtual void proc_reset(unsigned id);
+    virtual const cfg_t &get_cfg() const;
+    virtual const map<size_t, processor_t*>& get_harts() const;
     virtual const char* get_symbol(uint64_t addr);
     bool isMem(u64 address);
     bool isIo(u64 address);
@@ -73,6 +81,9 @@ public:
     processor_t *proc;
     state_t *state;
     CpuMemoryView *memory;
+    string isaStorage;
+    string privStorage;
+    ofstream spikeSink;
 
     u32 physWidth;
 
@@ -106,5 +117,4 @@ public:
     void scStatus(bool failure);
     void addRegion(Region r);
 };
-
 

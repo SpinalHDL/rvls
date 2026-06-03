@@ -74,7 +74,10 @@ rvlsJni(spikeLogCommit), jboolean enable){
 	c->config.spikeLogCommit = enable;
 	for(auto hart : c->harts){
 		if(enable)  hart->proc->enable_log_commits();
-		if(!enable)  hart->proc->disable_log_commits();
+		if(!enable) {
+			hart->proc->disable_log_commits();
+			hart->proc->enable_commit_log_state();
+		}
 	}
 }
 rvlsJni(time), unsigned long value){
@@ -232,4 +235,3 @@ rvlsJniBool(storeConditional), int hartId, jboolean failure){
 #endif
 
 #endif
-

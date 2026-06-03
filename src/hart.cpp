@@ -11,6 +11,7 @@
 
 SpikeIf::SpikeIf(CpuMemoryView *memory){
     this->memory = memory;
+    debug_mmu = NULL;
 }
 
 Region* SpikeIf::getRegion(u64 address){
@@ -43,6 +44,10 @@ char* SpikeIf::addr_to_mem(reg_t addr)  {
 //        printf("addr_to_mem %lx ", addr);
 //        return (char*) memory->get(addr);
     return NULL;
+}
+
+bool SpikeIf::reservable(reg_t addr)  {
+    return isMem(addr);
 }
 
 // used for MMIO addresses
@@ -107,6 +112,14 @@ void SpikeIf::proc_reset(unsigned id)  {
 //        printf("proc_reset %d\n", id);
 }
 
+const cfg_t &SpikeIf::get_cfg() const  {
+    return cfg;
+}
+
+const map<size_t, processor_t*>& SpikeIf::get_harts() const  {
+    return harts;
+}
+
 const char* SpikeIf::get_symbol(uint64_t addr)  {
 //        printf("get_symbol %lx\n", addr);
     return NULL;
@@ -117,16 +130,22 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMemoryView *memory, FILE *logs){
     this->memory = memory;
     this->physWidth = physWidth;
+    this->isaStorage = isa;
+    this->privStorage = priv;
     sif = new SpikeIf(memory);
-    std::ofstream outfile ("/dev/null",std::ofstream::binary);
-    proc = new processor_t(isa.c_str(), priv.c_str(), "", sif, hartId, false, logs, outfile);
+    sif->cfg.isa = this->isaStorage.c_str();
+    sif->cfg.priv = this->privStorage.c_str();
+    sif->cfg.pmpregions = pmpNum;
+    sif->cfg.pmpgranularity = 1 << 12;
+    sif->cfg.hartids = vector<size_t>({hartId});
+    sif->cfg.explicit_hartids = true;
+    spikeSink.open("/dev/null", std::ofstream::binary);
+    proc = new processor_t(this->isaStorage.c_str(), this->privStorage.c_str(), &sif->cfg, sif, hartId, false, logs, spikeSink);
+    sif->harts[hartId] = proc;
+    proc->enable_commit_log_state();
     proc->paddr_bits_sim = physWidth;
-    proc->lg_pmp_granularity = 12;
     auto xlen = proc->get_xlen();
-    proc->set_impl(IMPL_MMU_SV32, xlen == 32);
-    proc->set_impl(IMPL_MMU_SV39, xlen == 64);
-    proc->set_impl(IMPL_MMU_SV48, false);
-    proc->set_impl(IMPL_MMU, true);
+    proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->set_pmp_num(pmpNum);
     state = proc->get_state();
     if(pmpNum > 0) state->csrmap[CSR_PMPADDR0]->unlogged_write(~reg_t(0));
