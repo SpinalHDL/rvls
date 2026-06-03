@@ -148,7 +148,7 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->set_pmp_num(pmpNum);
     state = proc->get_state();
-    if(pmpNum > 0) state->csrmap[CSR_PMPADDR0]->unlogged_write(~reg_t(0));
+    if(pmpNum > 0) state->csrmap[CSR_PMPADDR0]->unlogged_backdoor_write(~reg_t(0));
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
     state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
@@ -239,11 +239,11 @@ void Hart::commit(u64 pc){
         switch(csrAddress){
         case CSR_MCYCLE:
         case CSR_UCYCLE:
-            state->csrmap[CSR_MCYCLE]->unlogged_write(csrReadData);
+            state->csrmap[CSR_MCYCLE]->unlogged_backdoor_write(csrReadData);
             break;
         case CSR_MCYCLEH:
         case CSR_UCYCLEH:
-            state->csrmap[CSR_MCYCLEH]->unlogged_write(csrReadData);
+            state->csrmap[CSR_MCYCLEH]->unlogged_backdoor_write(csrReadData);
             break;
         case MIP:
         case SIP:
@@ -256,7 +256,7 @@ void Hart::commit(u64 pc){
         }
         if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31) ||
            (csrAddress >= CSR_MHPMCOUNTER3H && csrAddress <= CSR_MHPMCOUNTER31H) || (csrAddress >= CSR_HPMCOUNTER3H && csrAddress <= CSR_HPMCOUNTER31H)){
-            state->csrmap[csrAddress]->unlogged_write(csrReadData);
+            state->csrmap[csrAddress]->unlogged_backdoor_write(csrReadData);
         }
     }
 
