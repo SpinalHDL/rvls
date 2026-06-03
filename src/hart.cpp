@@ -148,7 +148,10 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->set_pmp_num(pmpNum);
     state = proc->get_state();
-    if(pmpNum > 0) state->csrmap[CSR_PMPADDR0]->unlogged_backdoor_write(~reg_t(0));
+    if(pmpNum > 0) {
+        state->csrmap[CSR_PMPADDR0]->unlogged_backdoor_write(~reg_t(0));
+        state->csrmap[CSR_PMPCFG0]->unlogged_backdoor_write(PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+    }
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
     state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
