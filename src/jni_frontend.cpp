@@ -11,9 +11,16 @@
 #include "hart.hpp"
 #include "disasm.h"
 
+class RvlsDisassembler {
+public:
+	isa_parser_t isa;
+	disassembler_t disassembler;
 
-static disassembler_t disasm32 = disassembler_t(32);
-static disassembler_t disasm64 = disassembler_t(64);
+	RvlsDisassembler(int xlen) :
+		isa(xlen == 32 ? "rv32i" : "rv64i", "msu"),
+		disassembler(&isa) {
+	}
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,17 +45,17 @@ string toString(JNIEnv *env, jstring jstr){
 }
 
 JNIEXPORT jlong JNICALL Java_rvls_jni_Frontend_newDisassemble(JNIEnv * env, jobject obj, int xlen){
-    return  (jlong) new disassembler_t(xlen);
+    return  (jlong) new RvlsDisassembler(xlen);
 }
 
 JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_disassemble(JNIEnv * env, jobject obj, long handle, long instruction){
-	std::string str = ((disassembler_t*)handle)->disassemble(instruction);
+	std::string str = ((RvlsDisassembler*)handle)->disassembler.disassemble(instruction);
 	jstring result = env->NewStringUTF(str.c_str());
     return result;
 }
 
 JNIEXPORT void JNICALL Java_rvls_jni_Frontend_deleteDisassemble(JNIEnv * env, jobject obj, long handle){
-	delete (disassembler_t*)handle;
+	delete (RvlsDisassembler*)handle;
 }
 
 
