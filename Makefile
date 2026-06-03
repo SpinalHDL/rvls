@@ -1,5 +1,5 @@
-CXX      := -c++
-CXXFLAGS := -pedantic-errors -Wall -Wextra -Werror
+CXX      := c++
+CXXFLAGS := -std=c++20 -pedantic-errors -Wall -Wextra -Werror
 LDFLAGS  := -L/usr/lib -lstdc++ -lm
 BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
@@ -14,7 +14,7 @@ SPIKE_OBJS:= libspike_main.a  libriscv.a  libdisasm.a  libsoftfloat.a  libfesvr.
 SPIKE_OBJS:=$(addprefix ${SPIKE_BUILD}/,${SPIKE_OBJS})
 LDFLAGS+=${SPIKE_OBJS}
 LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-LIBRARIES += -lpthread -ldl -lboost_regex -lpthread  -lboost_regex 
+LIBRARIES += -lpthread -ldl -lboost_regex -lpthread  -lboost_regex
 
 INCLUDE += -I$(realpath ${SPIKE}/riscv)
 INCLUDE += -I$(realpath ${SPIKE}/fesvr)
@@ -52,12 +52,12 @@ $(OBJ_DIR)/%.o: %.cpp
 $(APP_DIR)/$(TARGET).so: $(OBJECTS)
 	@mkdir -p $(@D)
 	$(CXX) -fPIC -shared $(CXXFLAGS) -o $(APP_DIR)/$(TARGET).so $^ $(LDFLAGS) $(LIBRARIES)
-	
+
 
 $(APP_DIR)/$(TARGET): $(APP_DIR)/$(TARGET).so
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/$(TARGET) $^ $(LDFLAGS) $(LIBRARIES)
-	
+
 
 -include $(DEPENDENCIES)
 
@@ -70,7 +70,7 @@ build:
 debug: CXXFLAGS += -DDEBUG -g
 debug: all
 
-release: CXXFLAGS += 
+release: CXXFLAGS +=
 release: all
 
 clean:
@@ -83,4 +83,3 @@ info:
 	@echo "[*] Sources:         ${SRC}         "
 	@echo "[*] Objects:         ${OBJECTS}     "
 	@echo "[*] Dependencies:    ${DEPENDENCIES}"
-                       
