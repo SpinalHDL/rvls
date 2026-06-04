@@ -350,6 +350,12 @@ void Hart::commit(u64 pc){
             default:{
                     if((inst & 0x7F) == 0x73 && (inst & 0x3000) != 0){
                         if(!(csrAddress >= 1 && csrAddress <= 3)){ //avoid fcsr
+                            if(csrWrite && (csrAddress == MIP || csrAddress == SIP) && rd == CSR_MVIP){
+                                continue; //Spike logs mip.SEIP's mvip alias before the architectural mip write.
+                            }
+                            if(!csrWrite && ((csrAddress == CSR_SIE && rd == CSR_MIE) || (csrAddress == CSR_SIP && rd == CSR_MIP))){
+                                continue; //Spike logs the backing machine CSR after a supervisor CSR proxy write.
+                            }
                             assertTrue("CSR WRITE MISSING", csrWrite);
                             assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
                         }
