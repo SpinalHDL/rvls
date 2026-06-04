@@ -303,6 +303,21 @@ void Hart::commit(u64 pc){
 			}
         	break;
         }
+
+        if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31) ||
+           (csrAddress >= CSR_MHPMCOUNTER3H && csrAddress <= CSR_MHPMCOUNTER31H) || (csrAddress >= CSR_HPMCOUNTER3H && csrAddress <= CSR_HPMCOUNTER31H)){
+            for (auto &item : state->log_reg_write) {
+                if (item.first == 0)
+                  continue;
+                u32 rd = item.first >> 4;
+                switch (item.first & 0xf) {
+                case 0:  //integer
+                    item.second.v[0] = integerWriteData;
+                    state->XPR.write(rd, integerWriteData);
+                    break;
+                }
+            }
+        }
     }
 
     //Checks
