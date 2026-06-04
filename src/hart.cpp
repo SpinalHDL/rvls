@@ -142,10 +142,11 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     spikeSink.open("/dev/null", std::ofstream::binary);
     proc = new processor_t(this->isaStorage.c_str(), this->privStorage.c_str(), &sif->cfg, sif, hartId, false, logs, spikeSink);
     sif->harts[hartId] = proc;
-    proc->enable_commit_log_state();
-    proc->paddr_bits_sim = physWidth;
     auto xlen = proc->get_xlen();
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
+    proc->reset();
+    proc->enable_commit_log_state();
+    proc->paddr_bits_sim = physWidth;
     proc->set_pmp_num(pmpNum);
     state = proc->get_state();
     if(pmpNum > 0) {
