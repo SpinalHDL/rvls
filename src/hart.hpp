@@ -119,3 +119,24 @@ public:
     void addRegion(Region r);
 };
 
+class RvlsHpmCounterCsr : public csr_t {
+public:
+    RvlsHpmCounterCsr(processor_t* const proc, const reg_t addr) : csr_t(proc, addr), value(0) {}
+
+    reg_t read() const noexcept override {
+        return value;
+    }
+
+    void sync(reg_t value) noexcept {
+        this->value = value;
+    }
+
+protected:
+    bool unlogged_write(const reg_t) noexcept override {
+        return true;
+    }
+
+private:
+    reg_t value;
+};
+

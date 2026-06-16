@@ -7,7 +7,35 @@
 
 #include "hart.hpp"
 
+static bool isHpmCounterCsr(u32 csr){
+    return (csr >= CSR_MHPMCOUNTER3 && csr <= CSR_MHPMCOUNTER31) ||
+           (csr >= CSR_HPMCOUNTER3 && csr <= CSR_HPMCOUNTER31) ||
+           (csr >= CSR_MHPMCOUNTER3H && csr <= CSR_MHPMCOUNTER31H) ||
+           (csr >= CSR_HPMCOUNTER3H && csr <= CSR_HPMCOUNTER31H);
+}
 
+static bool isCounterEnableCsr(u32 csr){
+    return csr == CSR_MCOUNTEREN || csr == CSR_SCOUNTEREN || csr == CSR_HCOUNTEREN;
+}
+
+static u32 machineHpmCounterCsr(u32 csr){
+    if(csr >= CSR_HPMCOUNTER3 && csr <= CSR_HPMCOUNTER31) {
+        return CSR_MHPMCOUNTER3 + (csr - CSR_HPMCOUNTER3);
+    }
+    if(csr >= CSR_HPMCOUNTER3H && csr <= CSR_HPMCOUNTER31H) {
+        return CSR_MHPMCOUNTER3H + (csr - CSR_HPMCOUNTER3H);
+    }
+    return csr;
+}
+
+static void syncCsrRead(csr_t_p csr, u64 value){
+    auto hpm = std::dynamic_pointer_cast<RvlsHpmCounterCsr>(csr);
+    if(hpm) {
+        hpm->sync(value);
+    } else {
+        csr->unlogged_backdoor_write(value);
+    }
+}
 
 SpikeIf::SpikeIf(CpuMemoryView *memory){
     this->memory = memory;
@@ -157,6 +185,31 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
     state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
     state->csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, state->csrmap[CSR_MCYCLEH]);
+    state->csrmap[CSR_MCOUNTEREN]->unlogged_backdoor_write(MCOUNTEREN_TIME);
+    if(!state->csrmap.count(CSR_MTOPI)) {
+        state->csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
+    }
+    if(!state->csrmap.count(CSR_STOPI)) {
+        state->csrmap[CSR_STOPI] = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+    }
+    if(!state->csrmap.count(CSR_VSTOPI)) {
+        state->csrmap[CSR_VSTOPI] = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
+    }
+    for(reg_t i = 0; i < N_HPMCOUNTERS; ++i) {
+        const reg_t mcounterAddr = CSR_MHPMCOUNTER3 + i;
+        const reg_t counterAddr = CSR_HPMCOUNTER3 + i;
+        auto mcounter = std::make_shared<RvlsHpmCounterCsr>(proc, mcounterAddr);
+        state->csrmap[mcounterAddr] = mcounter;
+        state->csrmap[counterAddr] = std::make_shared<counter_proxy_csr_t>(proc, counterAddr, mcounter);
+
+        if(xlen == 32) {
+            const reg_t mcounterhAddr = CSR_MHPMCOUNTER3H + i;
+            const reg_t counterhAddr = CSR_HPMCOUNTER3H + i;
+            auto mcounterh = std::make_shared<RvlsHpmCounterCsr>(proc, mcounterhAddr);
+            state->csrmap[mcounterhAddr] = mcounterh;
+            state->csrmap[counterhAddr] = std::make_shared<counter_proxy_csr_t>(proc, counterhAddr, mcounterh);
+        }
+    }
 }
 
 void Hart::close() {
@@ -249,6 +302,12 @@ void Hart::commit(u64 pc){
         case CSR_UCYCLEH:
             state->csrmap[CSR_MCYCLEH]->unlogged_backdoor_write(csrReadData);
             break;
+        case CSR_TIME:
+            state->time->sync(csrReadData);
+            break;
+        case CSR_TIMEH:
+            state->time->sync((state->time->read() & 0xffffffffULL) | (csrReadData << 32));
+            break;
         case MIP:
         case SIP:
         case UIP:
@@ -258,8 +317,10 @@ void Hart::commit(u64 pc){
 //                                cout << main_time << " " << hex << robCtx.csrReadData << " " << state->mip->read()  << " " << state->csrmap[robCtx.csrAddress]->read() << dec << endl;
             break;
         }
-        if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31) ||
-           (csrAddress >= CSR_MHPMCOUNTER3H && csrAddress <= CSR_MHPMCOUNTER31H) || (csrAddress >= CSR_HPMCOUNTER3H && csrAddress <= CSR_HPMCOUNTER31H)){
+        if(isHpmCounterCsr(csrAddress)){
+            syncCsrRead(state->csrmap[machineHpmCounterCsr(csrAddress)], csrReadData);
+        }
+        if(isCounterEnableCsr(csrAddress)){
             state->csrmap[csrAddress]->unlogged_backdoor_write(csrReadData);
         }
     }
@@ -305,8 +366,7 @@ void Hart::commit(u64 pc){
         	break;
         }
 
-        if((csrAddress >= CSR_MHPMCOUNTER3 && csrAddress <= CSR_MHPMCOUNTER31) || (csrAddress >= CSR_HPMCOUNTER3 && csrAddress <= CSR_HPMCOUNTER31) ||
-           (csrAddress >= CSR_MHPMCOUNTER3H && csrAddress <= CSR_MHPMCOUNTER31H) || (csrAddress >= CSR_HPMCOUNTER3H && csrAddress <= CSR_HPMCOUNTER31H)){
+        if(isHpmCounterCsr(csrAddress)){
             for (auto &item : state->log_reg_write) {
                 if (item.first == 0)
                   continue;
