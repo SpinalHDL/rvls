@@ -155,7 +155,7 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMemoryView *memory, FILE *logs){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, CpuMemoryView *memory, FILE *logs){
     this->memory = memory;
     this->physWidth = physWidth;
     this->isaStorage = isa;
@@ -165,6 +165,7 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     sif->cfg.priv = this->privStorage.c_str();
     sif->cfg.pmpregions = pmpNum;
     sif->cfg.pmpgranularity = 1 << 12;
+    sif->cfg.trigger_count = triggerCount;
     sif->cfg.hartids = vector<size_t>({hartId});
     sif->cfg.explicit_hartids = true;
     spikeSink.open("/dev/null", std::ofstream::binary);
@@ -186,6 +187,10 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, CpuMe
     state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
     state->csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, state->csrmap[CSR_MCYCLEH]);
     state->csrmap[CSR_MCOUNTEREN]->unlogged_backdoor_write(MCOUNTEREN_TIME);
+    if(triggerCount == 0) {
+        state->csrmap[CSR_TINFO] = std::make_shared<inaccessible_csr_t>(proc, CSR_TINFO);
+    }
+    state->csrmap[CSR_TDATA3] = std::make_shared<inaccessible_csr_t>(proc, CSR_TDATA3);
     if(!state->csrmap.count(CSR_MTOPI)) {
         state->csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
     }
