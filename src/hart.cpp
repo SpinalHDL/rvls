@@ -176,6 +176,8 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 t
     proc = new processor_t(this->isaStorage.c_str(), this->privStorage.c_str(), &sif->cfg, sif, hartId, false, logs, spikeSink);
     sif->harts[hartId] = proc;
     auto xlen = proc->get_xlen();
+    // asid support is VexiiRiscv is not implemented.
+    proc->set_impl(IMPL_MMU_ASID, false);
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->reset();
     proc->enable_commit_log_state();
