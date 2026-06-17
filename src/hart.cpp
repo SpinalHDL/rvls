@@ -18,6 +18,10 @@ static bool isCounterEnableCsr(u32 csr){
     return csr == CSR_MCOUNTEREN || csr == CSR_SCOUNTEREN || csr == CSR_HCOUNTEREN;
 }
 
+static bool isTopiCsr(u32 csr){
+    return csr == CSR_MTOPI || csr == CSR_STOPI || csr == CSR_VSTOPI;
+}
+
 static u32 machineHpmCounterCsr(u32 csr){
     if(csr >= CSR_HPMCOUNTER3 && csr <= CSR_HPMCOUNTER31) {
         return CSR_MHPMCOUNTER3 + (csr - CSR_HPMCOUNTER3);
@@ -322,6 +326,9 @@ void Hart::commit(u64 pc){
 //                                cout << main_time << " " << hex << robCtx.csrReadData << " " << state->mip->read()  << " " << state->csrmap[robCtx.csrAddress]->read() << dec << endl;
             break;
         }
+        if(isTopiCsr(csrAddress)){
+            state->mip->unlogged_write_with_mask(-1, interruptPending);
+        }
         if(isHpmCounterCsr(csrAddress)){
             syncCsrRead(state->csrmap[machineHpmCounterCsr(csrAddress)], csrReadData);
         }
@@ -450,7 +457,12 @@ void Hart::ioAccess(TraceIo io){
 }
 
 void Hart::setInt(u32 id, bool value){
-
+    u64 mask = 1ULL << id;
+    if(value) {
+        interruptPending |= mask;
+    } else {
+        interruptPending &= ~mask;
+    }
 }
 
 void Hart::scStatus(bool failure){

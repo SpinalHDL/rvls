@@ -104,6 +104,7 @@ public:
     bool scValid = false;
     bool scFailure = false;
 
+    u64 interruptPending = 0;
 
     Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, CpuMemoryView *memory, FILE *logs);
     void close();
