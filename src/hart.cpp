@@ -6,6 +6,10 @@
  */
 
 #include "hart.hpp"
+#include "snapshot.hpp"
+#include "disasm.h"
+
+#include <format>
 
 static bool isHpmCounterCsr(u32 csr){
     return (csr >= CSR_MHPMCOUNTER3 && csr <= CSR_MHPMCOUNTER31) ||
@@ -39,6 +43,32 @@ static void syncCsrRead(csr_t_p csr, u64 value){
     } else {
         csr->unlogged_backdoor_write(value);
     }
+}
+
+static std::string formatHex(u64 value, u32 width){
+    if(width <= 8) return std::format("0x{:0{}x}", static_cast<u32>(value), width);
+    return std::format("0x{:0{}x}", value, width);
+}
+
+static std::string formatRaw128(u64 high, u64 low){
+    return std::format("0x{:016x}{:016x}", high, low);
+}
+
+static void dumpCsr(std::stringstream &ss, const state_t *state, reg_t address, u32 width){
+    if(!state)
+        return;
+
+    auto it = state->csrmap.find(address);
+    if(it == state->csrmap.end() || !it->second)
+        return;
+
+    ss << std::format("  0x{:03x}=", address);
+    try {
+        ss << formatHex(it->second->read(), width);
+    } catch (...) {
+        ss << "<read failed>";
+    }
+    ss << "\n";
 }
 
 SpikeIf::SpikeIf(CpuMemoryView *memory, u32 hartId){
@@ -223,15 +253,107 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 t
             state->csrmap[counterhAddr] = std::make_shared<counter_proxy_csr_t>(proc, counterhAddr, mcounterh);
         }
     }
+    getContextHartsManager().add(hartId, *this);
 }
 
 void Hart::close() {
+    getContextHartsManager().remove(hartId);
     auto f = proc->get_log_file();
     if(f) fclose(f);
 }
 
 void Hart::setPc(u64 pc){
     state->pc = pc;
+}
+
+static const reg_t dump_csrs[] = {
+    CSR_SSTATUS, CSR_SIE, CSR_STVEC, CSR_SCOUNTEREN,
+    CSR_SSCRATCH, CSR_SEPC, CSR_SCAUSE, CSR_STVAL, CSR_SIP, CSR_SATP,
+    CSR_VSSTATUS, CSR_VSTVEC, CSR_VSEPC, CSR_VSCAUSE, CSR_VSTVAL, CSR_VSATP,
+    CSR_MSTATUS, CSR_MISA, CSR_MEDELEG, CSR_MIDELEG, CSR_MIE, CSR_MTVEC,
+    CSR_MCOUNTEREN, CSR_MCOUNTINHIBIT, CSR_MSCRATCH, CSR_MEPC, CSR_MCAUSE,
+    CSR_MTVAL, CSR_MIP, CSR_MTINST, CSR_MTVAL2,
+    CSR_HSTATUS, CSR_HEDELEG, CSR_HIDELEG, CSR_HIE, CSR_HCOUNTEREN,
+    CSR_HTVAL, CSR_HIP, CSR_HVIP, CSR_HTINST, CSR_HGATP,
+    CSR_MCYCLE, CSR_MINSTRET, CSR_TIME
+};
+
+std::string Hart::formatFailureContext() const {
+    std::stringstream ss;
+    const u32 xlen = proc ? proc->get_xlen() : 64;
+    const u32 regWidth = xlen / 4;
+
+    ss << "=== rvls failure context ===\n";
+
+    if(state) {
+        ss << "spike_pc: " << formatHex(state->pc, regWidth) << "\n";
+        ss << "inst: " << formatHex(state->last_inst.bits(), 8) << "\n";
+        ss << "privilege: priv=" << state->prv
+           << " pre_priv=" << state->prev_prv
+           << " v=" << state->v
+           << " pre_v=" << state->prev_v
+           << " last_inst_priv=" << state->last_inst_priv
+           << " last_inst_xlen=" << state->last_inst_xlen
+           << " last_inst_flen=" << state->last_inst_flen
+           << "\n";
+        ss << "trap: happened=" << state->trap_happened
+           << " interrupt=" << state->trap_interrupt
+           << " code=" << state->trap_code
+           << "\n";
+    }
+
+    ss << "rvls trace state:\n";
+    ss << "  integerWriteValid=" << integerWriteValid
+       << " integerWriteData=" << formatHex(integerWriteData, regWidth) << "\n";
+    ss << "  floatWriteValid=" << floatWriteValid
+       << " floatWriteData=" << formatHex(floatWriteData, 16) << "\n";
+    ss << "  csrRead=" << csrRead << " csrWrite=" << csrWrite
+       << std::format(" csrAddress=0x{:x}", csrAddress)
+       << " csrReadData=" << formatHex(csrReadData, regWidth)
+       << " csrWriteData=" << formatHex(csrWriteData, regWidth)
+       << "\n";
+    ss << "  scValid=" << scValid << " scFailure=" << scFailure << "\n";
+    ss << "  interruptPending=" << formatHex(interruptPending, regWidth) << "\n";
+
+    if(state) {
+        ss << "spike log_reg_write:\n";
+        if(state->log_reg_write.empty()) {
+            ss << "  <empty>\n";
+        } else {
+            for(const auto &item : state->log_reg_write) {
+                const u32 address = item.first >> 4;
+                const u32 kind = item.first & 0xf;
+                ss << "  kind=" << kind << " address=" << address;
+                ss << " value=" << formatHex(item.second.v[0], regWidth);
+                if(kind == 1) {
+                    ss << " raw128=" << formatRaw128(item.second.v[1], item.second.v[0]);
+                }
+                ss << "\n";
+            }
+        }
+
+        ss << "XPR:\n";
+        for(int i = 0; i < NXPR; ++i) {
+            ss << std::format("  {:>4}={}", xpr_name[i], formatHex(state->XPR[i], regWidth));
+            if((i + 1) % 4 == 0) ss << "\n";
+        }
+        if(NXPR % 4 != 0) ss << "\n";
+
+        ss << "FPR raw128:\n";
+        for(int i = 0; i < NFPR; ++i) {
+            const auto value = state->FPR[i];
+            ss << std::format("  {:>4}={}", fpr_name[i], formatRaw128(value.v[1], value.v[0]));
+            if((i + 1) % 2 == 0) ss << "\n";
+        }
+        if(NFPR % 2 != 0) ss << "\n";
+
+        ss << "CSR:\n";
+        for(auto csr : dump_csrs) {
+            dumpCsr(ss, state, csr, regWidth);
+        }
+    }
+
+    return ss.str();
 }
 
 void Hart::writeRf(u32 rfKind, u32 address, u64 data){

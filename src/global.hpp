@@ -77,8 +77,10 @@ static std::string strFormat(const char* formatString, ...){
 }
 
 
+std::string appendFailureContext(int hartId, std::string message);
+
 static void failure(int hartId, std::string message){
-	throw std::runtime_error(message);
+	throw std::runtime_error(appendFailureContext(hartId, message));
 }
 
 static void failure(int hartId, const char* formatString, ...){
@@ -86,7 +88,7 @@ static void failure(int hartId, const char* formatString, ...){
     va_start(args, formatString);
     std::string message = myvsprintf(formatString, args);
     va_end(args);
-    throw std::runtime_error(message);
+    throw std::runtime_error(appendFailureContext(hartId, message));
 }
 
 

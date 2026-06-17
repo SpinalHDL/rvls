@@ -120,6 +120,7 @@ public:
     void setInt(u32 id, bool value);
     void scStatus(bool failure);
     void addRegion(Region r);
+    std::string formatFailureContext() const;
 };
 
 class RvlsHpmCounterCsr : public csr_t {
