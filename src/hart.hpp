@@ -53,12 +53,13 @@ public:
 class SpikeIf : public simif_t{
 public:
     CpuMemoryView *memory;
+    u32 hartId;
     queue <TraceIo> ioQueue;
     vector<Region> regions;
     cfg_t cfg;
     map<size_t, processor_t*> harts;
 
-    SpikeIf(CpuMemoryView *memory);
+    SpikeIf(CpuMemoryView *memory, u32 hartId);
 
     virtual char* addr_to_mem(reg_t addr);
     virtual bool reservable(reg_t addr);
@@ -82,6 +83,7 @@ public:
     processor_t *proc;
     state_t *state;
     CpuMemoryView *memory;
+    u32 hartId;
     string isaStorage;
     string privStorage;
     ofstream spikeSink;

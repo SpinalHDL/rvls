@@ -41,8 +41,9 @@ static void syncCsrRead(csr_t_p csr, u64 value){
     }
 }
 
-SpikeIf::SpikeIf(CpuMemoryView *memory){
+SpikeIf::SpikeIf(CpuMemoryView *memory, u32 hartId){
     this->memory = memory;
+    this->hartId = hartId;
     debug_mmu = NULL;
 }
 
@@ -107,11 +108,11 @@ bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
     }
     if(isIo(addr)){
     //        printf("mmio_load %lx %ld\n", addr, len);
-        assertTrue("missing mmio\n", !ioQueue.empty());
+        assertTrue(hartId, "missing mmio\n", !ioQueue.empty());
         auto dut = ioQueue.front();
-        assertEq("mmio write\n", dut.write, false);
-        assertEq("mmio address\n", dut.address, addr);
-        assertEq("mmio len\n", dut.size, len);
+        assertEq(hartId, "mmio write\n", dut.write, false);
+        assertEq(hartId, "mmio address\n", dut.address, addr);
+        assertEq(hartId, "mmio len\n", dut.size, len);
         memcpy(bytes, (u8*)&dut.data, len);
         ioQueue.pop();
         return !dut.error;
@@ -127,12 +128,12 @@ bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
 
     if(isIo(addr)){
     //        printf("mmio_store %lx %ld\n", addr, len);
-        assertTrue("missing mmio\n", !ioQueue.empty());
+        assertTrue(hartId, "missing mmio\n", !ioQueue.empty());
         auto dut = ioQueue.front();
-        assertEq("mmio write\n", dut.write, true);
-        assertEq("mmio address\n", dut.address, addr);
-        assertEq("mmio len\n", dut.size, len);
-        assertTrue("mmio data\n", !memcmp((u8*)&dut.data, bytes, len));
+        assertEq(hartId, "mmio write\n", dut.write, true);
+        assertEq(hartId, "mmio address\n", dut.address, addr);
+        assertEq(hartId, "mmio len\n", dut.size, len);
+        assertTrue(hartId, "mmio data\n", !memcmp((u8*)&dut.data, bytes, len));
         ioQueue.pop();
         return !dut.error;
     }
@@ -161,10 +162,11 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
 
 Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, CpuMemoryView *memory, FILE *logs){
     this->memory = memory;
+    this->hartId = hartId;
     this->physWidth = physWidth;
     this->isaStorage = isa;
     this->privStorage = priv;
-    sif = new SpikeIf(memory);
+    sif = new SpikeIf(memory, hartId);
     sif->cfg.isa = this->isaStorage.c_str();
     sif->cfg.priv = this->privStorage.c_str();
     sif->cfg.pmpregions = pmpNum;
@@ -244,15 +246,15 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
         break;
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
-        	failure("duplicated CSR access \n");
+            failure(hartId, "duplicated CSR access \n");
         }
         csrAddress = address;
         csrWrite = true;
         csrWriteData = data;
         break;
     default:
-    	failure("??? unknown RF trace \n");
-    	break;
+        failure(hartId, "??? unknown RF trace \n");
+        break;
     }
 
 }
@@ -262,14 +264,14 @@ void Hart::readRf(u32 rfKind, u32 address, u64 data){
     switch(rfKind){
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
-        	failure("duplicated CSR access \n");
+            failure(hartId, "duplicated CSR access \n");
         }
         csrAddress = address;
         csrRead = true;
         csrReadData = data;
         break;
     default:
-    	failure("??? unknown RF trace \n");
+        failure(hartId, "??? unknown RF trace \n");
         break;
     }
 
@@ -286,19 +288,19 @@ void Hart::trap(bool interrupt, u32 code){
     proc->step(1);
     if(interrupt) state->mip->write_with_mask(mask, 0);
     if(!state->trap_happened){
-        failure("DUT did trap on %lx\n", fromPc);
+        failure(hartId, "DUT did trap on %lx\n", fromPc);
     }
 
     memory->step();
-    assertEq("DUT interrupt missmatch", interrupt, state->trap_interrupt);
-    assertEq("DUT code missmatch", code, state->trap_code);
+    assertEq(hartId, "DUT interrupt missmatch", interrupt, state->trap_interrupt);
+    assertEq(hartId, "DUT code missmatch", code, state->trap_code);
     physExtends(state->pc);
 }
 
 void Hart::commit(u64 pc){
 	auto shift = 64-proc->get_xlen();
     if(pc != (state->pc << shift >> shift)){
-    	failure("PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
+        failure(hartId, "PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
     }
 
     //Sync CSR
@@ -397,7 +399,7 @@ void Hart::commit(u64 pc){
 
     //Checks
 //        printf("%016lx %08lx\n", pc, state->last_inst.bits());
-    assertTrue("DUT missed a trap", !state->trap_happened);
+    assertTrue(hartId, "DUT missed a trap", !state->trap_happened);
     for (auto item : state->log_reg_write) {
         if (item.first == 0)
           continue;
@@ -405,13 +407,13 @@ void Hart::commit(u64 pc){
         u32 rd = item.first >> 4;
         switch (item.first & 0xf) {
         case 0: { //integer
-            assertTrue("INTEGER WRITE MISSING", integerWriteValid);
-            assertEq("INTEGER WRITE MISSMATCH", integerWriteData, item.second.v[0]);
+            assertTrue(hartId, "INTEGER WRITE MISSING", integerWriteValid);
+            assertEq(hartId, "INTEGER WRITE MISSMATCH", integerWriteData, item.second.v[0]);
             integerWriteValid = false;
         } break;
         case 1: { //float
-            assertTrue("FLOAT WRITE MISSING", floatWriteValid);
-            assertEq("FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
+            assertTrue(hartId, "FLOAT WRITE MISSING", floatWriteValid);
+            assertEq(hartId, "FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
             floatWriteValid = false;
         } break;
         case 4:{ //CSR
@@ -431,8 +433,8 @@ void Hart::commit(u64 pc){
                             if(!csrWrite && ((csrAddress == CSR_SIE && rd == CSR_MIE) || (csrAddress == CSR_SIP && rd == CSR_MIP))){
                                 continue; //Spike logs the backing machine CSR after a supervisor CSR proxy write.
                             }
-                            assertTrue("CSR WRITE MISSING", csrWrite);
-                            assertEq("CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
+                            assertTrue(hartId, "CSR WRITE MISSING", csrWrite);
+                            assertEq(hartId, "CSR WRITE ADDRESS", (u32)(csrAddress & 0xCFF), (u32)(rd & 0xCFF));
                         }
     //                                                assertEq("CSR WRITE DATA", whitebox->robCtx[robId].csrWriteData, item.second.v[0]);
                     }
@@ -442,15 +444,15 @@ void Hart::commit(u64 pc){
             csrWrite = false;
         } break;
         default: {
-            failure("??? unknown spike trace %lx\n", item.first & 0xf);
+            failure(hartId, "??? unknown spike trace %lx\n", item.first & 0xf);
         } break;
         }
     }
 
     csrRead = false;
-    assertTrue("CSR WRITE SPAWNED", !csrWrite || (csrAddress >= 0x3b0 && csrAddress <= 0x3b0+63) || (csrAddress >= 0xb80 && csrAddress <= 0xb80+15) || (csrAddress == CSR_MCOUNTINHIBIT));
-    assertTrue("INTEGER WRITE SPAWNED", !integerWriteValid);
-    assertTrue("FLOAT WRITE SPAWNED", !floatWriteValid);
+    assertTrue(hartId, "CSR WRITE SPAWNED", !csrWrite || (csrAddress >= 0x3b0 && csrAddress <= 0x3b0+63) || (csrAddress >= 0xb80 && csrAddress <= 0xb80+15) || (csrAddress == CSR_MCOUNTINHIBIT));
+    assertTrue(hartId, "INTEGER WRITE SPAWNED", !integerWriteValid);
+    assertTrue(hartId, "FLOAT WRITE SPAWNED", !floatWriteValid);
     csrWrite = false;
 }
 

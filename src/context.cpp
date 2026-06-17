@@ -23,6 +23,7 @@ void Context::cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds){
 }
 
 void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 viewId, FILE *logs){
+    cpuMemoryViews[viewId]->bindHartId(hartId);
     auto hart = new Hart(hartId, isa, priv, physWidth, pmpNum, triggerCount, cpuMemoryViews[viewId], logs);
     harts.resize(max((size_t)(hartId+1), harts.size()));
     harts[hartId] = hart;
