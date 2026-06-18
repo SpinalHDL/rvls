@@ -121,6 +121,8 @@ public:
     void scStatus(bool failure);
     void addRegion(Region r);
     std::string formatFailureContext() const;
+    csr_t_p findCsr(reg_t address) const;
+    void backdoorWriteCsr(reg_t address, u64 value);
 };
 
 class RvlsHpmCounterCsr : public csr_t {
@@ -143,4 +145,3 @@ protected:
 private:
     reg_t value;
 };
-

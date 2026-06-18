@@ -37,6 +37,9 @@ static u32 machineHpmCounterCsr(u32 csr){
 }
 
 static void syncCsrRead(csr_t_p csr, u64 value){
+    if(!csr)
+        return;
+
     auto hpm = std::dynamic_pointer_cast<RvlsHpmCounterCsr>(csr);
     if(hpm) {
         hpm->sync(value);
@@ -217,14 +220,14 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 t
     proc->set_pmp_num(pmpNum);
     state = proc->get_state();
     if(pmpNum > 0) {
-        state->csrmap[CSR_PMPADDR0]->unlogged_backdoor_write(~reg_t(0));
-        state->csrmap[CSR_PMPCFG0]->unlogged_backdoor_write(PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+        backdoorWriteCsr(CSR_PMPADDR0, ~reg_t(0));
+        backdoorWriteCsr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
     }
     state->csrmap[CSR_MCYCLE] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLE, 0);
     state->csrmap[CSR_MCYCLEH] = std::make_shared<basic_csr_t>(proc, CSR_MCYCLEH, 0);
     state->csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, state->csrmap[CSR_MCYCLE]);
     state->csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, state->csrmap[CSR_MCYCLEH]);
-    state->csrmap[CSR_MCOUNTEREN]->unlogged_backdoor_write(MCOUNTEREN_TIME);
+    backdoorWriteCsr(CSR_MCOUNTEREN, MCOUNTEREN_TIME);
     if(triggerCount == 0) {
         state->csrmap[CSR_TINFO] = std::make_shared<inaccessible_csr_t>(proc, CSR_TINFO);
     }
@@ -431,11 +434,11 @@ void Hart::commit(u64 pc){
         switch(csrAddress){
         case CSR_MCYCLE:
         case CSR_UCYCLE:
-            state->csrmap[CSR_MCYCLE]->unlogged_backdoor_write(csrReadData);
+            backdoorWriteCsr(CSR_MCYCLE, csrReadData);
             break;
         case CSR_MCYCLEH:
         case CSR_UCYCLEH:
-            state->csrmap[CSR_MCYCLEH]->unlogged_backdoor_write(csrReadData);
+            backdoorWriteCsr(CSR_MCYCLEH, csrReadData);
             break;
         case CSR_TIME:
             state->time->sync(csrReadData);
@@ -456,10 +459,10 @@ void Hart::commit(u64 pc){
             state->mip->unlogged_write_with_mask(-1, interruptPending);
         }
         if(isHpmCounterCsr(csrAddress)){
-            syncCsrRead(state->csrmap[machineHpmCounterCsr(csrAddress)], csrReadData);
+            syncCsrRead(findCsr(machineHpmCounterCsr(csrAddress)), csrReadData);
         }
         if(isCounterEnableCsr(csrAddress)){
-            state->csrmap[csrAddress]->unlogged_backdoor_write(csrReadData);
+            backdoorWriteCsr(csrAddress, csrReadData);
         }
     }
 
@@ -472,7 +475,10 @@ void Hart::commit(u64 pc){
         }
     }
 
-    long long instret = state->csrmap[CSR_MINSTRET]->read();
+    [[maybe_unused]] long long instret = 0;
+    if(auto minstret = findCsr(CSR_MINSTRET)) {
+        instret = minstret->read();
+    }
     //Run the spike model
     proc->step(1);
     memory->step();
@@ -598,4 +604,21 @@ void Hart::scStatus(bool failure){
 
 void Hart::addRegion(Region r){
     sif->regions.push_back(r);
+}
+
+csr_t_p Hart::findCsr(reg_t address) const {
+    if(!state)
+        return nullptr;
+
+    auto it = state->csrmap.find(address);
+    if(it == state->csrmap.end())
+        return nullptr;
+
+    return it->second;
+}
+
+void Hart::backdoorWriteCsr(reg_t address, u64 value) {
+    auto csr = findCsr(address);
+    if(csr)
+        csr->unlogged_backdoor_write(value);
 }
