@@ -145,3 +145,14 @@ protected:
 private:
     reg_t value;
 };
+
+class RvlsTselectCsr : public basic_csr_t {
+public:
+    RvlsTselectCsr(processor_t* const proc, const reg_t addr, u32 triggerCount);
+
+protected:
+    bool unlogged_write(const reg_t val) noexcept override;
+
+private:
+    reg_t mask;
+};

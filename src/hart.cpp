@@ -36,6 +36,15 @@ static u32 machineHpmCounterCsr(u32 csr){
     return csr;
 }
 
+static reg_t triggerIndexMask(u32 triggerCount){
+    reg_t mask = 0;
+    while(triggerCount > 1) {
+        mask = (mask << 1) | 1;
+        triggerCount = (triggerCount + 1) >> 1;
+    }
+    return mask;
+}
+
 static void syncCsrRead(csr_t_p csr, u64 value){
     if(!csr)
         return;
@@ -191,6 +200,15 @@ const char* SpikeIf::get_symbol(uint64_t addr)  {
     return NULL;
 }
 
+RvlsTselectCsr::RvlsTselectCsr(processor_t* const proc, const reg_t addr, u32 triggerCount) :
+    basic_csr_t(proc, addr, 0),
+    mask(triggerIndexMask(triggerCount)) {
+}
+
+bool RvlsTselectCsr::unlogged_write(const reg_t val) noexcept {
+    return basic_csr_t::unlogged_write(val & mask);
+}
+
 
 
 Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, CpuMemoryView *memory, FILE *logs){
@@ -230,6 +248,11 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 t
     backdoorWriteCsr(CSR_MCOUNTEREN, MCOUNTEREN_TIME);
     if(triggerCount == 0) {
         state->csrmap[CSR_TINFO] = std::make_shared<inaccessible_csr_t>(proc, CSR_TINFO);
+    } else {
+        state->tselect = std::make_shared<RvlsTselectCsr>(proc, CSR_TSELECT, triggerCount);
+        state->csrmap[CSR_TSELECT] = state->tselect;
+        // VexiiRiscv currently exposes only debug trigger type 2 (mcontrol).
+        state->csrmap[CSR_TINFO] = std::make_shared<const_csr_t>(proc, CSR_TINFO, reg_t(1) << 2);
     }
     state->csrmap[CSR_TDATA3] = std::make_shared<inaccessible_csr_t>(proc, CSR_TDATA3);
     if(!state->csrmap.count(CSR_MTOPI)) {
