@@ -122,10 +122,21 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         throw runtime_error(line);
                     }
                 } else if(str == "new"){
-                    u32 hartId, physWidth, viewId, pmpNum;
+                    u32 hartId, physWidth, viewId, pmpNum, triggerCount = 0;
                     string isa, priv;
-                    f >> hartId >> isa >> priv >> physWidth >> pmpNum >> viewId;
-                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, viewId, context.spikeLogs);
+                    f >> hartId >> isa >> priv >> physWidth >> pmpNum;
+                    vector<u32> tail;
+                    u32 tailValue;
+                    while(f >> tailValue) tail.push_back(tailValue);
+                    if(tail.size() == 1) {
+                        viewId = tail[0];
+                    } else if(tail.size() == 2) {
+                        triggerCount = tail[0];
+                        viewId = tail[1];
+                    } else {
+                        throw runtime_error(line);
+                    }
+                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, triggerCount, viewId, context.spikeLogs);
                 } else {
                     throw runtime_error(line);
                 }
@@ -191,5 +202,4 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
     cout << "Model check Success <3" << endl;
     context.close();
 }
-
 

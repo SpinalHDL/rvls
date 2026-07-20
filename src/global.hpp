@@ -14,6 +14,7 @@
 #include <cstdarg>
 
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 
@@ -76,19 +77,18 @@ static std::string strFormat(const char* formatString, ...){
 }
 
 
-//static void failure(){
-//	throw std::runtime_error("");
-//}
+std::string appendFailureContext(int hartId, std::string message);
 
-static void failure(std::string message){
-	throw std::runtime_error(message);
+static void failure(int hartId, std::string message){
+	throw std::runtime_error(appendFailureContext(hartId, message));
 }
 
-static void failure(const char* formatString, ...){
+static void failure(int hartId, const char* formatString, ...){
     std::va_list args{};
     va_start(args, formatString);
-    throw std::runtime_error(myvsprintf(formatString, args));
+    std::string message = myvsprintf(formatString, args);
     va_end(args);
+    throw std::runtime_error(appendFailureContext(hartId, message));
 }
 
 
@@ -97,14 +97,12 @@ static void breakMe(){
 }
 
 
-#define assertEq(message, x,ref) if((x) != (ref)) {\
+#define assertEq(hartId, message, x,ref) if((x) != (ref)) {\
 	std::stringstream str; \
 	str << hex << message << " DUT=" << x << " REF=" << ref << dec; \
-	failure(str.str());\
+	failure(hartId, str.str());\
 }
 
-#define assertTrue(message, x) if(!(x)) {\
-	failure(message);\
+#define assertTrue(hartId, message, x) if(!(x)) {\
+	failure(hartId, message);\
 }
-
-

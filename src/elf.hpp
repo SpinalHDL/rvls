@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <sys/syscall.h>
 #include "stdio.h"
 #include "type.h"
 #include <stdexcept>
