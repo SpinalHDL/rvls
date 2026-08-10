@@ -96,8 +96,8 @@ rvlsJni(newCpuMemoryView),int viewId, long readIds, long writeIds){
 	c->cpuMemoryViewNew(viewId, readIds, writeIds);
 }
 
-rvlsJni(newCpu),int hartId, jstring isa, jstring priv, int physWidth, int pmpNum, int triggerCount, int memoryViewId){
-	c->rvNew(hartId, toString(env, isa), toString(env, priv), physWidth, pmpNum, triggerCount, memoryViewId, c->spikeLogs);
+rvlsJni(newCpu),int hartId, jstring isa, jstring priv, int physWidth, int pmpNum, int triggerCount, int asidWidth, int memoryViewId){
+	c->rvNew(hartId, toString(env, isa), toString(env, priv), physWidth, pmpNum, triggerCount, asidWidth, memoryViewId, c->spikeLogs);
 }
 
 rvlsJni(loadElf), long offset, jstring path){
