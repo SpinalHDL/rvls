@@ -211,7 +211,7 @@ bool RvlsTselectCsr::unlogged_write(const reg_t val) noexcept {
 
 
 
-Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, CpuMemoryView *memory, FILE *logs){
+Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs){
     this->memory = memory;
     this->hartId = hartId;
     this->physWidth = physWidth;
@@ -229,8 +229,7 @@ Hart::Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 t
     proc = new processor_t(this->isaStorage.c_str(), this->privStorage.c_str(), &sif->cfg, sif, hartId, false, logs, spikeSink);
     sif->harts[hartId] = proc;
     auto xlen = proc->get_xlen();
-    // asid support is VexiiRiscv is not implemented.
-    proc->set_impl(IMPL_MMU_ASID, false);
+    proc->set_impl(IMPL_MMU_ASID, asidWidth != 0);
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->reset();
     proc->enable_commit_log_state();

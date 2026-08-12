@@ -108,7 +108,7 @@ public:
 
     u64 interruptPending = 0;
 
-    Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, CpuMemoryView *memory, FILE *logs);
+    Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs);
     void close();
     void setPc(u64 pc);
     void writeRf(u32 rfKind, u32 address, u64 data);
