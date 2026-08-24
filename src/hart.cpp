@@ -503,6 +503,7 @@ void Hart::commit(u64 pc){
     }
     //Run the spike model
     proc->step(1);
+    proc->clear_waiting_for_interrupt();
     memory->step();
 
     //Sync back some CSR
