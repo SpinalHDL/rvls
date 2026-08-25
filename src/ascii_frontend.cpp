@@ -106,6 +106,16 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         u64 pc;
                         f >> hartId >> hex >> pc >> dec;
                         rv->setPc(pc);
+                    } else if(str == "reg"){
+                        u32 hartId;
+                        s32 id;
+                        u64 value;
+                        char prefix;
+                        f >> hartId >> prefix >> id >> hex >> value >> dec;
+                        if(!f || prefix != 'x'){
+                            throw runtime_error(line);
+                        }
+                        rv->setRegister(id, value);
                     } else {
                         throw runtime_error(line);
                     }

@@ -42,6 +42,7 @@ trait TraceBackend{
   def loadBin(offset: Long, path: File): Unit
   def loadBytes(offset: Long, bytes: Array[Byte]): Unit
   def setPc(hartId : Int, pc : Long): Unit
+  def setRegister(hartId : Int, id : Int, value : Long): Unit
   def writeRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
   def readRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
   def commit(hartId : Int, pc : Long, instruction : Long): Unit
@@ -77,6 +78,7 @@ class DummyBackend() extends TraceBackend{
   override def loadBin(offset: Long, path: File) = {}
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = {}
   override def setPc(hartId: Int, pc: Long) = {}
+  override def setRegister(hartId : Int, id : Int, value : Long) = {}
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
   override def commit(hartId: Int, pc: Long, instruction : Long) = {}
@@ -149,6 +151,10 @@ class FileBackend(f : File) extends TraceBackend{
     log(f"rv set pc $hartId $pc%016x\n")
   }
 
+  override def setRegister(hartId : Int, id : Int, value : Long) = {
+    log(f"rv set reg $hartId x$id $value%016x\n")
+  }
+
   override def newCpuMemoryView(memoryViewId : Int, readIds : Long, writeIds : Long) = {
     log(f"memview new $memoryViewId $readIds $writeIds\n")
   }
@@ -209,6 +215,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def loadBin(offset: Long, path: File): Unit = Frontend.loadBin(handle, offset, path.getAbsolutePath)
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = Frontend.loadBytes(handle, offset, bytes)
   override def setPc(hartId: Int, pc: Long): Unit = Frontend.setPc(handle, hartId, pc)
+  override def setRegister(hartId : Int, id : Int, value : Long): Unit = Frontend.setRegister(handle, hartId, id, value)
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
   override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {

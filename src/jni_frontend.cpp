@@ -118,6 +118,17 @@ rvlsJni(loadBytes), long offset, jbyteArray array){
 rvlsJni(setPc), int hartId, long pc){
 	rv->setPc(pc);
 }
+rvlsJni(setRegister), int hartId, int id, long value){
+    try{
+        rv->setRegister(id, value);
+    } catch (const std::exception &e) {
+        auto exception = env->FindClass("java/lang/IllegalArgumentException");
+        if(exception != nullptr){
+            env->ThrowNew(exception, e.what());
+            env->DeleteLocalRef(exception);
+        }
+    }
+}
 rvlsJni(writeRf), int hartId, int rfKind, int address, long data){
 	rv->writeRf(rfKind, address, data);
 }
