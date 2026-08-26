@@ -28,6 +28,7 @@ public:
         size_t len;
         u8 bytes[8];
         u64 userId;
+        u64 epoch;
         bool valid = false;
         Access *previous, *next;
 
@@ -66,6 +67,7 @@ public:
     vector<Access> stores;
     Access *storeFresh, *loadFresh;
     Memory &memory;
+    u64 epoch = 0;
 
     //CPU interface
     void loadExecute(u64 id, u64 addr, size_t len, const u8* bytes);

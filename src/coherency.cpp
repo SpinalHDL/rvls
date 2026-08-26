@@ -24,6 +24,7 @@ void CpuMemoryView::loadExecute(u64 id, u64 addr, size_t len, const u8* bytes){
     if(len > 8) throw std::runtime_error("Load len to big ???");
     load.addr = addr;
     load.len = len;
+    load.epoch = epoch++;
     memory.read(addr, len, load.bytes);
     Access *store = storeHead;
     while(store){
@@ -87,8 +88,6 @@ void CpuMemoryView::storeCommit(u64 id){
 			storeHead = &store;
 		}
 		storeLast = &store;
-    } else {
-    	store.clear();
     }
 }
 
@@ -97,6 +96,7 @@ void CpuMemoryView::storeBroadcast(u64 id){
     if(!store.executed) throw std::runtime_error("Store wasn't executed ???");
     if(store.broadcasted) throw std::runtime_error("Store was already broadcasted ???");
     memory.write(store.addr, store.len, store.bytes);
+    store.epoch = epoch;
     store.broadcasted = true;
     if(store.commited){
 		if(store.next){
@@ -150,8 +150,10 @@ void CpuMemoryView::store(u64 address,u32 length, const u8 *data){
         auto &load = *loadsInflight[i];
         if(!load.valid)
             throw std::runtime_error("load wasn't valid wuuut ???");
-        store.bypass(load);
+        if(!store.broadcasted || load.epoch < store.epoch)
+            store.bypass(load);
     }
+    if(store.broadcasted) store.clear();
 }
 
 void CpuMemoryView::fetch(u64 address,u32 length, u8 *data){
