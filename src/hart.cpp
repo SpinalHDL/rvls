@@ -291,6 +291,21 @@ void Hart::setPc(u64 pc){
     state->pc = pc;
 }
 
+void Hart::setRegister(s32 id, u64 value){
+    if(id < 0 || id >= NXPR){
+        throw std::invalid_argument("Integer register id must be between 0 and 31");
+    }
+
+    if(proc->get_xlen() == 32){
+        value &= 0xffffffffULL;
+        if(value & 0x80000000ULL){
+            value |= 0xffffffff00000000ULL;
+        }
+    }
+
+    state->XPR.write(id, value);
+}
+
 static const reg_t dump_csrs[] = {
     CSR_SSTATUS, CSR_SIE, CSR_STVEC, CSR_SCOUNTEREN,
     CSR_SSCRATCH, CSR_SEPC, CSR_SCAUSE, CSR_STVAL, CSR_SIP, CSR_SATP,
@@ -503,6 +518,7 @@ void Hart::commit(u64 pc){
     }
     //Run the spike model
     proc->step(1);
+    proc->clear_waiting_for_interrupt();
     memory->step();
 
     //Sync back some CSR

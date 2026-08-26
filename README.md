@@ -113,6 +113,10 @@ There are mostly 3 kinds of RISC-V related commands :
 `rv set pc $hartId $pc_hex`
 - Used once after reset to specify where the CPU PC landed
 
+`rv set reg $hartId x$id $value_hex`
+- Set an integer register before execution. Writes to x0 are ignored.
+- RV32 values use their low 32 bits and are sign-extended in the reference model.
+
 `rv commit $hartId $pc_hex`
 - Specify when a given hart committed an instruction
 

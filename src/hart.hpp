@@ -111,6 +111,7 @@ public:
     Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs);
     void close();
     void setPc(u64 pc);
+    void setRegister(s32 id, u64 value);
     void writeRf(u32 rfKind, u32 address, u64 data);
     void readRf(u32 rfKind, u32 address, u64 data);
     void physExtends(u64 &v);

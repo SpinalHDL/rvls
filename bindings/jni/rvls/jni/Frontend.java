@@ -6,7 +6,7 @@ public class Frontend  {
     public static native long newDisassemble(int xlen);
     public static native void deleteDisassemble(long handle);
     public static native String disassemble(long handle, long instruction);
-    
+
     public static native long newContext(String workspace);
     public static native void deleteContext(long handle);
 
@@ -19,6 +19,7 @@ public class Frontend  {
     public static native void loadBin(long handle, long offset, String path);
     public static native void loadBytes(long handle, long offset, byte[] bytes);
     public static native void setPc(long handle, int hartId, long pc);
+    public static native void setRegister(long handle, int hartId, int id, long value);
     public static native void writeRf(long handle, int hardId, int rfKind, int address, long data);
     public static native void readRf(long handle, int hardId, int rfKind, int address, long data);
     public static native boolean commit(long handle, int hartId, long pc);
