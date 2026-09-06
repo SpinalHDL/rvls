@@ -21,7 +21,7 @@ void CpuMemoryView::bindHartId(u32 hartId){
 //Nax interface
 void CpuMemoryView::loadExecute(u64 id, u64 addr, size_t len, const u8* bytes){
     auto &load = loads[id];
-    if(len > 8) throw std::runtime_error("Load len to big ???");
+    if(len > 16) throw std::runtime_error("Load len to big ???");
     load.addr = addr;
     load.len = len;
     load.epoch = epoch++;
@@ -61,7 +61,7 @@ void CpuMemoryView::loadFlush(){
 void CpuMemoryView::storeExecute(u64 id, u64 addr, size_t len, const u8* bytes){
     auto &store = stores[id];
 //    if(store.valid) throw std::runtime_error("Store was valid ???");
-    if(len > 8) throw std::runtime_error("Store len to big ???");
+    if(len > 16) throw std::runtime_error("Store len to big ???");
     if(store.commited) throw std::runtime_error("Store was already commited ???");
     if(store.broadcasted) throw std::runtime_error("Store was already broadcasted ???");
     store.executed = true;

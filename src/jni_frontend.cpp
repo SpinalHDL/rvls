@@ -6,6 +6,7 @@
 #include <iostream>
 #include <queue>
 #include <sstream>
+#include <vector>
 #include "context.hpp"
 #include "config.hpp"
 #include "hart.hpp"
@@ -35,6 +36,16 @@ jmethodID methodId;
 
 #define c ((Context*)handle)
 #define rv c->harts[hartId]
+
+static std::vector<u8> readJniBytes(JNIEnv *env, jbyteArray array, size_t expected){
+    if(array == nullptr) throw std::runtime_error("Null RVLS data byte array");
+    const jsize size = env->GetArrayLength(array);
+    if(expected > 16 || size != static_cast<jsize>(expected)) throw std::runtime_error("Bad RVLS data byte array length");
+
+    std::vector<u8> data(size);
+    env->GetByteArrayRegion(array, 0, size, reinterpret_cast<jbyte *>(data.data()));
+    return data;
+}
 
 string toString(JNIEnv *env, jstring jstr){
     const char * chars;
@@ -129,11 +140,25 @@ rvlsJni(setRegister), int hartId, int id, long value){
         }
     }
 }
-rvlsJni(writeRf), int hartId, int rfKind, int address, long data){
-	rv->writeRf(rfKind, address, data);
+rvlsJni(writeRf), int hartId, int rfKind, int address, jbyteArray data){
+    try{
+        auto bytes = readJniBytes(env, data, rfKind == 1 ? 16 : 8);
+        rv->writeRf(rfKind, address, bytes);
+    } catch (const std::exception &e) {
+        c->lastErrorMessage = e.what();
+        auto exceptionClass = env->FindClass("java/lang/IllegalArgumentException");
+        if(exceptionClass != nullptr) env->ThrowNew(exceptionClass, e.what());
+    }
 }
-rvlsJni(readRf), int hartId, int rfKind, int address, long data) {
-	rv->readRf(rfKind, address, data);
+rvlsJni(readRf), int hartId, int rfKind, int address, jbyteArray data) {
+    try{
+        auto bytes = readJniBytes(env, data, 8);
+        rv->readRf(rfKind, address, bytes);
+    } catch (const std::exception &e) {
+        c->lastErrorMessage = e.what();
+        auto exceptionClass = env->FindClass("java/lang/IllegalArgumentException");
+        if(exceptionClass != nullptr) env->ThrowNew(exceptionClass, e.what());
+    }
 }
 
 rvlsJniBool(commit), int hartId, long pc) {
@@ -162,15 +187,21 @@ rvlsJniString(getLastErrorMessage)) {
 }
 
 
-rvlsJni(ioAccess), int hartId, jboolean write, long address, long data, int mask, int size, jboolean error){
-	TraceIo a;
-	a.write = write;
-	a.address = address;
-	a.data = data;
-	a.mask = mask;
-	a.size = size;
-	a.error = error;
-    rv->ioAccess(a);
+rvlsJni(ioAccess), int hartId, jboolean write, long address, jbyteArray data, int mask, int size, jboolean error){
+    try{
+        TraceIo a;
+        a.write = write;
+        a.address = address;
+        a.data = readJniBytes(env, data, size);
+        a.mask = mask;
+        a.size = size;
+        a.error = error;
+        rv->ioAccess(a);
+    } catch (const std::exception &e) {
+        c->lastErrorMessage = e.what();
+        auto exceptionClass = env->FindClass("java/lang/IllegalArgumentException");
+        if(exceptionClass != nullptr) env->ThrowNew(exceptionClass, e.what());
+    }
 }
 
 rvlsJni(setInterrupt), int hartId, int intId, jboolean value){
@@ -183,9 +214,10 @@ rvlsJni(addRegion), int hartId, int kind, long base, long size){
 	r.size = size;
     rv->addRegion(r);
 }
-rvlsJniBool(loadExecute), int hartId, long id, long addr, long len, long data){
+rvlsJniBool(loadExecute), int hartId, long id, long addr, long len, jbyteArray data){
 	try{
-        rv->memory->loadExecute(id, addr, len, (u8*)&data);
+		auto bytes = readJniBytes(env, data, len);
+        rv->memory->loadExecute(id, addr, len, bytes.data());
 	} catch (const std::exception &e) {
 		c->lastErrorMessage = e.what();
 	    return false;
@@ -210,9 +242,10 @@ rvlsJniBool(loadFlush), int hartId){
 	}
 	return true;
 }
-rvlsJniBool(storeExecute), int hartId, long id, long addr, long len, long data){
+rvlsJniBool(storeExecute), int hartId, long id, long addr, long len, jbyteArray data){
 	try{
-        rv->memory->storeExecute(id, addr, len, (u8*)&data);
+		auto bytes = readJniBytes(env, data, len);
+        rv->memory->storeExecute(id, addr, len, bytes.data());
 	} catch (const std::exception &e) {
 		c->lastErrorMessage = e.what();
 	    return false;

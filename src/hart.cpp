@@ -66,6 +66,12 @@ static std::string formatRaw128(u64 high, u64 low){
     return std::format("0x{:016x}{:016x}", high, low);
 }
 
+static u64 decodeRaw(std::span<const u8> data){
+    u64 value = 0;
+    for(size_t i = 0; i < data.size(); ++i) value |= u64(data[i]) << (i * 8);
+    return value;
+}
+
 static void dumpCsr(std::stringstream &ss, const state_t *state, reg_t address, u32 width){
     if(!state)
         return;
@@ -155,7 +161,7 @@ bool SpikeIf::mmio_load(reg_t addr, size_t len, u8* bytes)  {
         assertEq(hartId, "mmio write\n", dut.write, false);
         assertEq(hartId, "mmio address\n", dut.address, addr);
         assertEq(hartId, "mmio len\n", dut.size, len);
-        memcpy(bytes, (u8*)&dut.data, len);
+        memcpy(bytes, dut.data.data(), len);
         ioQueue.pop();
         return !dut.error;
     }
@@ -175,7 +181,7 @@ bool SpikeIf::mmio_store(reg_t addr, size_t len, const u8* bytes)  {
         assertEq(hartId, "mmio write\n", dut.write, true);
         assertEq(hartId, "mmio address\n", dut.address, addr);
         assertEq(hartId, "mmio len\n", dut.size, len);
-        assertTrue(hartId, "mmio data\n", !memcmp((u8*)&dut.data, bytes, len));
+        assertTrue(hartId, "mmio data\n", !memcmp(dut.data.data(), bytes, len));
         ioQueue.pop();
         return !dut.error;
     }
@@ -346,7 +352,7 @@ std::string Hart::formatFailureContext() const {
     ss << "  integerWriteValid=" << integerWriteValid
        << " integerWriteData=" << formatHex(integerWriteData, regWidth) << "\n";
     ss << "  floatWriteValid=" << floatWriteValid
-       << " floatWriteData=" << formatHex(floatWriteData, 16) << "\n";
+       << " floatWriteData=" << formatRaw128(floatWriteData[1], floatWriteData[0]) << "\n";
     ss << "  csrRead=" << csrRead << " csrWrite=" << csrWrite
        << std::format(" csrAddress=0x{:x}", csrAddress)
        << " csrReadData=" << formatHex(csrReadData, regWidth)
@@ -396,15 +402,16 @@ std::string Hart::formatFailureContext() const {
     return ss.str();
 }
 
-void Hart::writeRf(u32 rfKind, u32 address, u64 data){
+void Hart::writeRf(u32 rfKind, u32 address, std::span<const u8> data){
     switch(rfKind){
     case 0:
         integerWriteValid = true;
-        integerWriteData = data;
+        integerWriteData = decodeRaw(data);
         break;
     case 1:
         floatWriteValid = true;
-        floatWriteData = data;
+        floatWriteData[0] = decodeRaw(data.first(8));
+        floatWriteData[1] = decodeRaw(data.last(8));
         break;
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
@@ -412,7 +419,7 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
         }
         csrAddress = address;
         csrWrite = true;
-        csrWriteData = data;
+        csrWriteData = decodeRaw(data);
         break;
     default:
         failure(hartId, "??? unknown RF trace \n");
@@ -422,7 +429,7 @@ void Hart::writeRf(u32 rfKind, u32 address, u64 data){
 }
 
 
-void Hart::readRf(u32 rfKind, u32 address, u64 data){
+void Hart::readRf(u32 rfKind, u32 address, std::span<const u8> data){
     switch(rfKind){
     case 4:
         if((csrWrite || csrRead) && csrAddress != address){
@@ -430,7 +437,7 @@ void Hart::readRf(u32 rfKind, u32 address, u64 data){
         }
         csrAddress = address;
         csrRead = true;
-        csrReadData = data;
+        csrReadData = decodeRaw(data);
         break;
     default:
         failure(hartId, "??? unknown RF trace \n");
@@ -579,7 +586,9 @@ void Hart::commit(u64 pc){
         } break;
         case 1: { //float
             assertTrue(hartId, "FLOAT WRITE MISSING", floatWriteValid);
-            assertEq(hartId, "FLOAT WRITE MISSMATCH", floatWriteData, item.second.v[0]);
+            if(floatWriteData[0] != item.second.v[0] || floatWriteData[1] != item.second.v[1]){
+                failure(hartId, "FLOAT WRITE MISSMATCH DUT=" + formatRaw128(floatWriteData[1], floatWriteData[0]) + " REF=" + formatRaw128(item.second.v[1], item.second.v[0]));
+            }
             floatWriteValid = false;
         } break;
         case 4:{ //CSR

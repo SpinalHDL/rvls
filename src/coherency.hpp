@@ -26,7 +26,7 @@ public:
     public:
         u64 addr;
         size_t len;
-        u8 bytes[8];
+        u8 bytes[16];
         u64 userId;
         u64 epoch;
         bool valid = false;
