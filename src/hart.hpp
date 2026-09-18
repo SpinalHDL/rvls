@@ -16,7 +16,9 @@
 #include <map>
 #include <queue>
 #include <sstream>
+#include <span>
 #include <vector>
+#include <array>
 #include "global.hpp"
 #include "memory.hpp"
 #include "processor.h"
@@ -31,15 +33,12 @@ class TraceIo{
 public:
     bool write;
     u64 address;
-    u64 data;
+    vector<u8> data;
     u32 mask;
     u32 size;
     bool error;
 
     TraceIo(){}
-    TraceIo(std::istringstream &f){
-        f >> write >> hex >> address >> data >> mask >> dec >> size >> error;
-    }
 };
 
 
@@ -94,7 +93,7 @@ public:
     u64 integerWriteData = 0;
 
     bool floatWriteValid = false;
-    u64 floatWriteData = 0;
+    std::array<u64, 2> floatWriteData{};
 
 
     u32 csrAddress = 0;
@@ -112,8 +111,8 @@ public:
     void close();
     void setPc(u64 pc);
     void setRegister(s32 id, u64 value);
-    void writeRf(u32 rfKind, u32 address, u64 data);
-    void readRf(u32 rfKind, u32 address, u64 data);
+    void writeRf(u32 rfKind, u32 address, std::span<const u8> data);
+    void readRf(u32 rfKind, u32 address, std::span<const u8> data);
     void physExtends(u64 &v);
     void trap(bool interrupt, u32 code);
     void commit(u64 pc);

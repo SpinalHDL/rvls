@@ -1,6 +1,20 @@
 #include "ascii_frontend.hpp"
+#include <charconv>
 
 using namespace std;
+
+static vector<u8> parseBytes(const string &token, size_t size){
+    if(size > 16 || token.size() != size*2) throw runtime_error("Bad data size");
+    vector<u8> data(size);
+    for(size_t i = 0; i < size; ++i){
+        const char *start = token.data() + token.size() - (i+1)*2;
+        unsigned value;
+        auto [end, error] = from_chars(start, start+2, value, 16);
+        if(error != errc() || end != start+2) throw runtime_error("Bad data value");
+        data[i] = value;
+    }
+    return data;
+}
 
 void checkFile(std::ifstream &lines, RvlsConfig &config){
     Context context;
@@ -26,13 +40,15 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     f >> str;
                     if(str == "w") {
                         u32 hartId, rfKind, address;
-                        u64 data;
-                        f >> hartId >> rfKind >> address >> hex >> data >> dec;
+                        string dataToken;
+                        f >> hartId >> rfKind >> address >> dataToken;
+                        auto data = parseBytes(dataToken, rfKind == 1 ? 16 : 8);
                         rv->writeRf(rfKind, address, data);
                     } else if(str == "r") {
                         u32 hartId, rfKind, address;
-                        u64 data;
-                        f >> hartId >> rfKind >> address >> hex >> data >> dec;
+                        string dataToken;
+                        f >> hartId >> rfKind >> address >> dataToken;
+                        auto data = parseBytes(dataToken, 8);
                         rv->readRf(rfKind, address, data);
                     } else {
                         throw runtime_error(line);
@@ -42,9 +58,11 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     f >> str;
                     if(str == "exe") {
                         u32 hartId, lqId;
-                        u64 address, len, data;
-                        f >> hartId >> lqId >> len >> hex >> address >> data >> dec;
-                        rv->memory->loadExecute(lqId, address, len, (u8*)&data);
+                        u64 address, len;
+                        string dataToken;
+                        f >> hartId >> lqId >> len >> hex >> address >> dataToken >> dec;
+                        auto data = parseBytes(dataToken, len);
+                        rv->memory->loadExecute(lqId, address, len, data.data());
                     } else if(str == "com") {
                         u32 hartId, lqId;
                         f >> hartId >> lqId;
@@ -60,9 +78,11 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     f >> str;
                     if(str == "exe") {
                         u32 hartId, sqId;
-                        u64 address, len, data;
-                        f >> hartId >> sqId >> len >> hex >> address >> data >> dec;
-                        rv->memory->storeExecute(sqId, address, len, (u8*)&data);
+                        u64 address, len;
+                        string dataToken;
+                        f >> hartId >> sqId >> len >> hex >> address >> dataToken >> dec;
+                        auto data = parseBytes(dataToken, len);
+                        rv->memory->storeExecute(sqId, address, len, data.data());
                     } else if(str == "com") {
                         u32 hartId, sqId;
                         f >> hartId >> sqId;
@@ -82,7 +102,10 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                 } else if (str == "io") {
                     u32 hartId;
                     f >> hartId;
-                    auto io = TraceIo(f);
+                    TraceIo io;
+                    string dataToken;
+                    f >> io.write >> hex >> io.address >> dataToken >> io.mask >> dec >> io.size >> io.error;
+                    io.data = parseBytes(dataToken, io.size);
                     rv->ioAccess(io);
                 } else if (str == "trap") {
                     u32 hartId, code;

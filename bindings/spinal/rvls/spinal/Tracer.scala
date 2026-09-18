@@ -5,19 +5,20 @@ import org.apache.commons.io.FileUtils
 import java.io.{BufferedWriter, File, FileWriter}
 import spinal.core._
 import spinal.core.sim._
+import spinal.lib._
 import spinal.lib.bus.misc.{AddressMapping, OrMapping, SizeMapping}
 
 class TraceIo (var write: Boolean,
                var address: Long,
-               var data: Long,
+               var data: Array[Byte],
                var mask: Int,
                var size: Int,
                var error: Boolean){
 
   def this(){
-    this(false, 0l, 0l, 0, 0, false)
+    this(false, 0l, Array.empty[Byte], 0, 0, false)
   }
-  def serialized() = f"${write.toInt} $address%016x $data%016x $mask%02x $size ${error.toInt}"
+  def serialized() = f"${write.toInt} $address%016x ${data.reverse.toList.bytesToHex} $mask%02x $size ${error.toInt}"
 }
 
 trait TraceBackend{
@@ -43,8 +44,8 @@ trait TraceBackend{
   def loadBytes(offset: Long, bytes: Array[Byte]): Unit
   def setPc(hartId : Int, pc : Long): Unit
   def setRegister(hartId : Int, id : Int, value : Long): Unit
-  def writeRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
-  def readRf(hardId : Int, rfKind : Int, address : Int, data : Long) //address out of range mean unknown
+  def writeRf(hardId : Int, rfKind : Int, address : Int, data : Array[Byte]) //address out of range mean unknown
+  def readRf(hardId : Int, rfKind : Int, address : Int, data : Array[Byte]) //address out of range mean unknown
   def commit(hartId : Int, pc : Long, instruction : Long): Unit
   def trap(hartId: Int, interrupt : Boolean, code : Int)
   def ioAccess(hartId: Int, access : TraceIo) : Unit
@@ -57,10 +58,10 @@ trait TraceBackend{
     }
   }
 
-  def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit
+  def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Array[Byte]) : Unit
   def loadCommit(hartId: Int, id : Long) : Unit
   def loadFlush(hartId: Int) : Unit
-  def storeExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit
+  def storeExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Array[Byte]) : Unit
   def storeCommit(hartId: Int, id: Long): Unit
   def storeBroadcast(hartId: Int, id: Long): Unit
   def storeConditional(hartId : Int, failure: Boolean) : Unit
@@ -79,17 +80,17 @@ class DummyBackend() extends TraceBackend{
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = {}
   override def setPc(hartId: Int, pc: Long) = {}
   override def setRegister(hartId : Int, id : Int, value : Long) = {}
-  override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
-  override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long) = {}
+  override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]) = {}
+  override def readRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]) = {}
   override def commit(hartId: Int, pc: Long, instruction : Long) = {}
   override def trap(hartId: Int, interrupt: Boolean, code: Int) = {}
   override def ioAccess(hartId: Int, access: TraceIo) = {}
   override def setInterrupt(hartId: Int, intId: Int, value: Boolean) = {}
   override def addRegion(hartId: Int, kind : Int, base: Long, size: Long) = {}
-  override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long) = {}
+  override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Array[Byte]) = {}
   override def loadCommit(hartId: Int, id: Long) = {}
   override def loadFlush(hartId: Int) = {}
-  override def storeExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long) = {}
+  override def storeExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Array[Byte]) = {}
   override def storeCommit(hartId: Int, id: Long) = {}
   override def storeBroadcast(hartId: Int, id: Long) = {}
   override def storeConditional(hartId: Int, failure: Boolean) = {}
@@ -115,12 +116,12 @@ class FileBackend(f : File) extends TraceBackend{
     log(f"rv trap $hartId ${interrupt.toInt} $code\n")
   }
 
-  override def writeRf(hartId: Int, rfKind: Int, address: Int, data: Long) = {
-    log(f"rv rf w $hartId $rfKind $address $data%016x\n")
+  override def writeRf(hartId: Int, rfKind: Int, address: Int, data: Array[Byte]) = {
+    log(f"rv rf w $hartId $rfKind $address ${data.reverse.toList.bytesToHex}\n")
   }
 
-  override def readRf(hartId: Int, rfKind: Int, address: Int, data: Long) = {
-    log(f"rv rf r $hartId $rfKind $address $data%016x\n")
+  override def readRf(hartId: Int, rfKind: Int, address: Int, data: Array[Byte]) = {
+    log(f"rv rf r $hartId $rfKind $address ${data.reverse.toList.bytesToHex}\n")
   }
 
   def ioAccess(hartId: Int, access : TraceIo) : Unit = {
@@ -163,8 +164,8 @@ class FileBackend(f : File) extends TraceBackend{
     log(f"rv new $hartId $isa $priv $physWidth $pmpNum $triggerCount $asidWidth $memoryViewId\n")
   }
 
-  override def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit = {
-    log(f"rv load exe $hartId $id $len $addr%016x $data%016x\n")
+  override def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Array[Byte]) : Unit = {
+    log(f"rv load exe $hartId $id $len $addr%016x ${data.reverse.toList.bytesToHex}\n")
   }
   override def loadCommit(hartId: Int, id : Long) : Unit = {
     log(f"rv load com $hartId $id\n")
@@ -172,8 +173,8 @@ class FileBackend(f : File) extends TraceBackend{
   override def loadFlush(hartId: Int) : Unit = {
     log(f"rv load flu $hartId\n")
   }
-  override def storeExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Long) : Unit = {
-    log(f"rv store exe $hartId $id $len $addr%016x $data%016x\n")
+  override def storeExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Array[Byte]) : Unit = {
+    log(f"rv store exe $hartId $id $len $addr%016x ${data.reverse.toList.bytesToHex}\n")
   }
   override def storeCommit(hartId: Int, id : Long) : Unit = {
     log(f"rv store com $hartId $id\n")
@@ -216,8 +217,8 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = Frontend.loadBytes(handle, offset, bytes)
   override def setPc(hartId: Int, pc: Long): Unit = Frontend.setPc(handle, hartId, pc)
   override def setRegister(hartId : Int, id : Int, value : Long): Unit = Frontend.setRegister(handle, hartId, id, value)
-  override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
-  override def readRf(hardId: Int, rfKind: Int, address: Int, data: Long): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
+  override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
+  override def readRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
   override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {
     throw new Exception(Frontend.getLastErrorMessage(handle))
   }
@@ -227,10 +228,10 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def ioAccess(hartId: Int, access: TraceIo): Unit = Frontend.ioAccess(handle, hartId, access.write, access.address, access.data, access.mask, access.size, access.error)
   override def setInterrupt(hartId: Int, intId: Int, value: Boolean): Unit = Frontend.setInterrupt(handle, hartId, intId, value)
   override def addRegion(hartId: Int, kind: Int, base: Long, size: Long): Unit = Frontend.addRegion(handle, hartId, kind, base, size)
-  override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.loadExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def loadExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Array[Byte]): Unit = if(!Frontend.loadExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def loadCommit(hartId: Int, id: Long): Unit = if(!Frontend.loadCommit(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def loadFlush(hartId: Int): Unit = if(!Frontend.loadFlush(handle, hartId)) throw new Exception(Frontend.getLastErrorMessage(handle))
-  override def storeExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Long): Unit = if(!Frontend.storeExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
+  override def storeExecute(hartId: Int, id: Long, addr: Long, len: Long, data: Array[Byte]): Unit = if(!Frontend.storeExecute(handle, hartId, id, addr, len, data)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def storeCommit(hartId: Int, id: Long): Unit = if(!Frontend.storeCommit(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def storeBroadcast(hartId: Int, id: Long): Unit = if(!Frontend.storeBroadcast(handle, hartId, id)) throw new Exception(Frontend.getLastErrorMessage(handle))
   override def storeConditional(hartId: Int, failure: Boolean): Unit = if(!Frontend.storeConditional(handle, hartId, failure)) throw new Exception(Frontend.getLastErrorMessage(handle))
