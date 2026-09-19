@@ -19,7 +19,11 @@ static vector<u8> parseBytes(const string &token, size_t size){
 void checkFile(std::ifstream &lines, RvlsConfig &config){
     Context context;
     context.config = config;
-    #define rv context.harts[hartId]
+    #define rv ({ \
+        auto tmp = context.harts.find(hartId); \
+        auto* hart = tmp != context.harts.end() ? (&tmp->second) : nullptr; \
+        hart; \
+    })
     std::string line;
     u64 lineId = 1;
     context.spikeLogs = fopen("spike.log", "w");

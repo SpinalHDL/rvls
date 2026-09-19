@@ -1,8 +1,9 @@
 #include "coherency.hpp"
 #include <string.h>
 #include "global.hpp"
+#include "context.hpp"
 
-CpuMemoryView::CpuMemoryView(Memory &memory, u64 readIds, u64 writeIds) : memory(memory){
+CpuMemoryView::CpuMemoryView(Context& context, Memory &memory, u64 readIds, u64 writeIds) : context(context), memory(memory){
     loadsInflightCount = 0;
     loadsInflight.resize(readIds);
     storeHead = NULL;
@@ -122,8 +123,8 @@ void CpuMemoryView::load(u64 address,u32 length, u8 *data){
     if(!loadFresh->valid)
         throw std::runtime_error("load wasn't valid on check ???");
     auto &load = *loadFresh; loadFresh = NULL;
-    assertEq(hartId, "Bad load addr", load.addr, address);
-    assertEq(hartId, "Bad load length", load.len, length);
+    assertEq(context, hartId, "Bad load addr", load.addr, address);
+    assertEq(context, hartId, "Bad load length", load.len, length);
     memcpy(data, load.bytes, load.len);
     load.valid = false;
 }
@@ -132,8 +133,8 @@ void CpuMemoryView::store(u64 address,u32 length, const u8 *data){
     if(!storeFresh) throw std::runtime_error("storeFresh wasn't valid on check ???");
     //if(!storeFresh->executed) throw std::runtime_error("Store wasn't executed on check ???");
     auto &store = *storeFresh; storeFresh = NULL;
-    assertEq(hartId, "Bad store addr", store.addr, address);
-    assertEq(hartId, "Bad store length", store.len, length);
+    assertEq(context, hartId, "Bad store addr", store.addr, address);
+    assertEq(context, hartId, "Bad store length", store.len, length);
     if(memcmp(store.bytes, data, length)) {
         printf("Got, expected:\n");
         for(u32 i = 0; i < length; ++i)

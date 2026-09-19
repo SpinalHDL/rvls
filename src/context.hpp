@@ -4,8 +4,8 @@
 #include "memory.hpp"
 #include "hart.hpp"
 #include "elf.hpp"
-#include <vector>
 #include <string>
+#include <map>
 #include "coherency.hpp"
 #include "config.hpp"
 
@@ -13,8 +13,8 @@ class Context{
 public:
     RvlsConfig config;
     Memory memory;
-    std::vector<Hart*> harts;
-    std::vector<CpuMemoryView*> cpuMemoryViews;
+    std::map<int, Hart> harts;
+    std::map<u32, CpuMemoryView> cpuMemoryViews;
     FILE *spikeLogs;
     u64 time = 0xFFFFFFFFFFFFFFFF;
     std::string lastErrorMessage;

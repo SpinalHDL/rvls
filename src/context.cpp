@@ -18,22 +18,23 @@ void Context::loadBytes(u64 offset, u32 length, u8* bytes){
 
 
 void Context::cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds){
-    cpuMemoryViews.resize(max((size_t)(id+1), cpuMemoryViews.size()));
-    cpuMemoryViews[id] = new CpuMemoryView(memory, readIds, writeIds);
+    cpuMemoryViews.try_emplace(id, *this, memory, readIds, writeIds);
 }
 
 void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 viewId, FILE *logs){
-    cpuMemoryViews[viewId]->bindHartId(hartId);
-    auto hart = new Hart(hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, cpuMemoryViews[viewId], logs);
-    harts.resize(max((size_t)(hartId+1), harts.size()));
-    harts[hartId] = hart;
-    if(config.spikeDebug) hart->proc->debug = true;
-    if(config.spikeLogCommit) hart->proc->enable_log_commits();
+    auto viewIter = cpuMemoryViews.find(viewId);
+    auto& view = viewIter->second;
+    view.bindHartId(hartId);
+    auto [iter, inserted] = harts.try_emplace(hartId, *this, hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, &view, logs);
+    if (!inserted) return;
+    auto &hart = iter->second;
+    if(config.spikeDebug) hart.proc->debug = true;
+    if(config.spikeLogCommit) hart.proc->enable_log_commits();
 }
 
 void Context::close(){
-    for(auto hart : harts){
-        if(hart) hart->close();
+    for(auto& [hartId, hart]: harts){
+        hart.close();
     }
 }
 

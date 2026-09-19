@@ -35,7 +35,11 @@ jmethodID methodId;
 #define rvlsJniString(n) JNIEXPORT jstring JNICALL Java_rvls_jni_Frontend_##n(JNIEnv * env, jobject obj, long handle
 
 #define c ((Context*)handle)
-#define rv c->harts[hartId]
+#define rv ({ \
+	auto tmp = c->harts.find(hartId); \
+	auto* hart = tmp != c->harts.end() ? (&tmp->second) : nullptr; \
+	hart; \
+})
 
 static std::vector<u8> readJniBytes(JNIEnv *env, jbyteArray array, size_t expected){
     if(array == nullptr) throw std::runtime_error("Null RVLS data byte array");
@@ -83,18 +87,18 @@ rvlsJni(deleteContext)){
 
 rvlsJni(spikeDebug), jboolean enable){
     c->config.spikeDebug = enable;
-	for(auto hart : c->harts){
-		hart->proc->debug = enable;
+	for(auto& [hartId, hart] : c->harts){
+		hart.proc->debug = enable;
 	}
 }
 
 rvlsJni(spikeLogCommit), jboolean enable){
 	c->config.spikeLogCommit = enable;
-	for(auto hart : c->harts){
-		if(enable)  hart->proc->enable_log_commits();
+	for(auto& [hartId, hart] : c->harts){
+		if(enable)  hart.proc->enable_log_commits();
 		if(!enable) {
-			hart->proc->disable_log_commits();
-			hart->proc->enable_commit_log_state();
+			hart.proc->disable_log_commits();
+			hart.proc->enable_commit_log_state();
 		}
 	}
 }

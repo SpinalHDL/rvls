@@ -6,6 +6,8 @@
 
 using namespace std;
 
+class Context;
+
 class MemoryView{
 public:
 
@@ -18,8 +20,10 @@ public:
 
 class CpuMemoryView : public MemoryView{
 public:
-    CpuMemoryView(Memory &memory, u64 readIds, u64 writeIds);
+    CpuMemoryView(Context& context, Memory &memory, u64 readIds, u64 writeIds);
     void bindHartId(u32 hartId);
+    CpuMemoryView(const CpuMemoryView&) = delete;
+    CpuMemoryView(CpuMemoryView&&) = delete;
     u32 hartId = u32(-1);
 
     class Access{
@@ -66,6 +70,7 @@ public:
     vector<Access> loads;
     vector<Access> stores;
     Access *storeFresh, *loadFresh;
+    Context& context;
     Memory &memory;
     u64 epoch = 0;
 
