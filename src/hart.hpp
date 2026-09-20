@@ -29,6 +29,8 @@
 
 using namespace std;
 
+class Context;
+
 class TraceIo{
 public:
     bool write;
@@ -78,6 +80,7 @@ public:
 
 class Hart{
 public:
+    Context& context;
     SpikeIf *sif;
     processor_t *proc;
     state_t *state;
@@ -107,7 +110,10 @@ public:
 
     u64 interruptPending = 0;
 
-    Hart(u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs);
+    Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs);
+    Hart(const Hart&) = delete;
+    Hart(Hart&&) = delete;
+
     void close();
     void setPc(u64 pc);
     void setRegister(s32 id, u64 value);
