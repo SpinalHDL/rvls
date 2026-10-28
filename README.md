@@ -10,6 +10,7 @@ RVLS (Risc-V Lock Step) is a CPU simulation trace checker.
 - Use a lightly modified Spike version to provide more info and allow coherency checks
 
 See [example/simple/trace.log](example/simple/trace.log) for an example of ASCII trace which can be checked by RVLS
+This trace was captured from a VexiiRiscv TestBench run of `example/simple/simple.elf` with RV32IMA and `--with-rvls-log`; only the ELF path was changed to a repository-relative path.
 
 RVLS is used to check the behavior of multicore NaxRiscv.
 NaxRiscv use a Write-Back L1 data cache, with tilelink to provide memory coherency between the cores, using a MESI protocol (https://en.wikipedia.org/wiki/MESI_protocol)
@@ -121,8 +122,9 @@ There are mostly 3 kinds of RISC-V related commands :
 - Set an integer register before execution. Writes to x0 are ignored.
 - RV32 values use their low 32 bits and are sign-extended in the reference model.
 
-`rv commit $hartId $pc_hex`
-- Specify when a given hart committed an instruction
+`rv commit $hartId $pc_hex $instruction_hex`
+- Specify when a given hart committed an instruction, including its raw instruction encoding
+- The instruction encoding is required and checked against the instruction fetched by Spike; 16-bit compressed encodings have zero upper bits
 
 `rv trap $hartId $interrupt $code`
 - Used for exception and interrupts traps
@@ -154,7 +156,10 @@ There are mostly 3 kinds of RISC-V related commands :
 `rv load flu $hartId`
 - load flu meaning "Remove all the outstanding memory load, as the CPU flushed the LQ"
 
-`rv store com $hartId $id $size $addr_hex $data_hex`
+`rv store exe $hartId $id $size $addr_hex $data_hex`
+- store exe meaning "The moment at which a store enters the CPU memory view"
+
+`rv store com $hartId $id`
 - store com meaning "A memory store commit"
 - should precede the related `rv commit` command
 

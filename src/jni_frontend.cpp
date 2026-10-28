@@ -165,9 +165,9 @@ rvlsJni(readRf), int hartId, int rfKind, int address, jbyteArray data) {
     }
 }
 
-rvlsJniBool(commit), int hartId, long pc) {
+rvlsJniBool(commit), int hartId, long pc, long instruction) {
 	try{
-		rv->commit(pc);
+		rv->commit(pc, instruction);
 	} catch (const std::exception &e) {
 		c->lastErrorMessage = e.what();
 	    return false;

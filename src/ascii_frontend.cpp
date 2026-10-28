@@ -39,7 +39,14 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     u32 hartId;
                     u64 pc;
                     f >> hartId >> hex >> pc >> dec;
-                    rv->commit(pc);
+                    string token, extra;
+                    if (!(f >> token) || (f >> extra)) throw runtime_error("Expected rv commit <hartId> <pc_hex> <instruction_hex>");
+                    u64 inst;
+                    auto [end, error] = from_chars(token.data(), token.data() + token.size(), inst, 16);
+                    if (error != errc() || end != token.data() + token.size() || inst > 0xffffffffULL) {
+                        throw runtime_error("Bad commit instruction encoding");
+                    }
+                    rv->commit(pc, inst);
                 } else if (str == "rf") {
                     f >> str;
                     if(str == "w") {

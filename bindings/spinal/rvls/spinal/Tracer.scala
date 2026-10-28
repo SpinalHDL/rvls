@@ -219,7 +219,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def setRegister(hartId : Int, id : Int, value : Long): Unit = Frontend.setRegister(handle, hartId, id, value)
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
-  override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {
+  override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc, instruction)) {
     throw new Exception(Frontend.getLastErrorMessage(handle))
   }
   override def trap(hartId: Int, interrupt: Boolean, code: Int): Unit = if(!Frontend.trap(handle, hartId, interrupt, code)) {

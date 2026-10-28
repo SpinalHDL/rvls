@@ -121,7 +121,7 @@ public:
     void readRf(u32 rfKind, u32 address, std::span<const u8> data);
     void physExtends(u64 &v);
     void trap(bool interrupt, u32 code);
-    void commit(u64 pc);
+    void commit(u64 pc, u64 inst);
     void ioAccess(TraceIo io);
     void setInt(u32 id, bool value);
     void scStatus(bool failure);

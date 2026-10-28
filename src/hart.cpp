@@ -465,7 +465,7 @@ void Hart::trap(bool interrupt, u32 code){
     physExtends(state->pc);
 }
 
-void Hart::commit(u64 pc){
+void Hart::commit(u64 pc, u64 inst){
 	auto shift = 64-proc->get_xlen();
     if(pc != (state->pc << shift >> shift)){
         failure(context, hartId, "PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
@@ -572,6 +572,11 @@ void Hart::commit(u64 pc){
     //Checks
 //        printf("%016lx %08lx\n", pc, state->last_inst.bits());
     assertTrue(context, hartId, "DUT missed a trap", !state->trap_happened);
+    const u64 refInst = state->last_inst.bits();
+    if (inst != refInst) {
+        failure(context, hartId, std::format("INSTRUCTION MISMATCH hart={} pc=0x{:016x} DUT=0x{:08x} SPIKE=0x{:08x}",
+                                             hartId, pc, inst, refInst));
+    }
     for (auto item : state->log_reg_write) {
         if (item.first == 0)
           continue;
