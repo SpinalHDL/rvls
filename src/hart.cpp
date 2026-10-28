@@ -217,7 +217,7 @@ bool RvlsTselectCsr::unlogged_write(const reg_t val) noexcept {
 
 
 
-Hart::Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs): context(context){
+Hart::Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 vmidWidth, CpuMemoryView *memory, FILE *logs): context(context){
     this->memory = memory;
     this->hartId = hartId;
     this->physWidth = physWidth;
@@ -236,6 +236,7 @@ Hart::Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth,
     sif->harts[hartId] = proc;
     auto xlen = proc->get_xlen();
     proc->set_impl(IMPL_MMU_ASID, asidWidth != 0);
+    proc->set_impl(IMPL_MMU_VMID, vmidWidth != 0);
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->reset();
     proc->enable_commit_log_state();

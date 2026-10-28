@@ -110,7 +110,7 @@ public:
 
     u64 interruptPending = 0;
 
-    Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs);
+    Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 vmidWidth, CpuMemoryView *memory, FILE *logs);
     Hart(const Hart&) = delete;
     Hart(Hart&&) = delete;
 

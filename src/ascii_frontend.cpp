@@ -159,7 +159,7 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         throw runtime_error(line);
                     }
                 } else if(str == "new"){
-                    u32 hartId, physWidth, viewId, pmpNum, triggerCount = 0, asidWidth = 0;
+                    u32 hartId, physWidth, viewId, pmpNum, triggerCount = 0, asidWidth = 0, vmidWidth = 0;
                     string isa, priv;
                     f >> hartId >> isa >> priv >> physWidth >> pmpNum;
                     vector<u32> tail;
@@ -174,10 +174,15 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         triggerCount = tail[0];
                         asidWidth = tail[1];
                         viewId = tail[2];
+                    } else if(tail.size() == 4) {
+                        triggerCount = tail[0];
+                        asidWidth = tail[1];
+                        vmidWidth = tail[2];
+                        viewId = tail[3];
                     } else {
                         throw runtime_error(line);
                     }
-                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, viewId, context.spikeLogs);
+                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, vmidWidth, viewId, context.spikeLogs);
                 } else {
                     throw runtime_error(line);
                 }

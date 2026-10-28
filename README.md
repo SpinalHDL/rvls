@@ -99,11 +99,15 @@ There are mostly 3 kinds of RISC-V related commands :
 
 ### general commands
 
-`rv new $hartId $isa $priv $physWidth $memoryViewId`
+`rv new $hartId $isa $priv $physWidth $pmpNum $triggerCount $asidWidth $vmidWidth $memoryViewId`
 - Create a new CPU
 - isa follow Spike, ex : RV32IMA
 - priv follow Spike, ex : MSU
 - physWidth specify the physical address memory width (32 bits max for now)
+- pmpNum specify the number of PMP entries
+- triggerCount specify the number of debug trigger
+- asidWidth specify the width of ASID in satp
+- vmidWidth specify the width of VMID in hgatp
 - memoryViewId specify which memory view will be used by the CPU to do load/store
 
 `"rv region add $hartId $kind $base_hex $size_hex")`
