@@ -39,7 +39,14 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                     u32 hartId;
                     u64 pc;
                     f >> hartId >> hex >> pc >> dec;
-                    rv->commit(pc);
+                    string token, extra;
+                    if (!(f >> token) || (f >> extra)) throw runtime_error("Expected rv commit <hartId> <pc_hex> <instruction_hex>");
+                    u64 inst;
+                    auto [end, error] = from_chars(token.data(), token.data() + token.size(), inst, 16);
+                    if (error != errc() || end != token.data() + token.size() || inst > 0xffffffffULL) {
+                        throw runtime_error("Bad commit instruction encoding");
+                    }
+                    rv->commit(pc, inst);
                 } else if (str == "rf") {
                     f >> str;
                     if(str == "w") {
@@ -159,7 +166,7 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         throw runtime_error(line);
                     }
                 } else if(str == "new"){
-                    u32 hartId, physWidth, viewId, pmpNum, triggerCount = 0, asidWidth = 0;
+                    u32 hartId, physWidth, viewId, pmpNum, triggerCount = 0, asidWidth = 0, vmidWidth = 0;
                     string isa, priv;
                     f >> hartId >> isa >> priv >> physWidth >> pmpNum;
                     vector<u32> tail;
@@ -174,10 +181,15 @@ void checkFile(std::ifstream &lines, RvlsConfig &config){
                         triggerCount = tail[0];
                         asidWidth = tail[1];
                         viewId = tail[2];
+                    } else if(tail.size() == 4) {
+                        triggerCount = tail[0];
+                        asidWidth = tail[1];
+                        vmidWidth = tail[2];
+                        viewId = tail[3];
                     } else {
                         throw runtime_error(line);
                     }
-                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, viewId, context.spikeLogs);
+                    context.rvNew(hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, vmidWidth, viewId, context.spikeLogs);
                 } else {
                     throw runtime_error(line);
                 }

@@ -111,8 +111,8 @@ rvlsJni(newCpuMemoryView),int viewId, long readIds, long writeIds){
 	c->cpuMemoryViewNew(viewId, readIds, writeIds);
 }
 
-rvlsJni(newCpu),int hartId, jstring isa, jstring priv, int physWidth, int pmpNum, int triggerCount, int asidWidth, int memoryViewId){
-	c->rvNew(hartId, toString(env, isa), toString(env, priv), physWidth, pmpNum, triggerCount, asidWidth, memoryViewId, c->spikeLogs);
+rvlsJni(newCpu),int hartId, jstring isa, jstring priv, int physWidth, int pmpNum, int triggerCount, int asidWidth, int vmidWidth, int memoryViewId){
+	c->rvNew(hartId, toString(env, isa), toString(env, priv), physWidth, pmpNum, triggerCount, asidWidth, vmidWidth, memoryViewId, c->spikeLogs);
 }
 
 rvlsJni(loadElf), long offset, jstring path){
@@ -165,9 +165,9 @@ rvlsJni(readRf), int hartId, int rfKind, int address, jbyteArray data) {
     }
 }
 
-rvlsJniBool(commit), int hartId, long pc) {
+rvlsJniBool(commit), int hartId, long pc, long instruction) {
 	try{
-		rv->commit(pc);
+		rv->commit(pc, instruction);
 	} catch (const std::exception &e) {
 		c->lastErrorMessage = e.what();
 	    return false;
