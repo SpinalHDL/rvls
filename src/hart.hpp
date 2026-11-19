@@ -110,7 +110,7 @@ public:
 
     u64 interruptPending = 0;
 
-    Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs);
+    Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 vmidWidth, CpuMemoryView *memory, FILE *logs);
     Hart(const Hart&) = delete;
     Hart(Hart&&) = delete;
 
@@ -121,7 +121,7 @@ public:
     void readRf(u32 rfKind, u32 address, std::span<const u8> data);
     void physExtends(u64 &v);
     void trap(bool interrupt, u32 code);
-    void commit(u64 pc);
+    void commit(u64 pc, u64 inst);
     void ioAccess(TraceIo io);
     void setInt(u32 id, bool value);
     void scStatus(bool failure);

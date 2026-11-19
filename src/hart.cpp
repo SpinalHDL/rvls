@@ -217,7 +217,7 @@ bool RvlsTselectCsr::unlogged_write(const reg_t val) noexcept {
 
 
 
-Hart::Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, CpuMemoryView *memory, FILE *logs): context(context){
+Hart::Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 vmidWidth, CpuMemoryView *memory, FILE *logs): context(context){
     this->memory = memory;
     this->hartId = hartId;
     this->physWidth = physWidth;
@@ -236,6 +236,7 @@ Hart::Hart(Context& context, u32 hartId, string isa, string priv, u32 physWidth,
     sif->harts[hartId] = proc;
     auto xlen = proc->get_xlen();
     proc->set_impl(IMPL_MMU_ASID, asidWidth != 0);
+    proc->set_impl(IMPL_MMU_VMID, vmidWidth != 0);
     proc->set_max_vaddr_bits(xlen == 32 ? 32 : 39);
     proc->reset();
     proc->enable_commit_log_state();
@@ -464,7 +465,7 @@ void Hart::trap(bool interrupt, u32 code){
     physExtends(state->pc);
 }
 
-void Hart::commit(u64 pc){
+void Hart::commit(u64 pc, u64 inst){
 	auto shift = 64-proc->get_xlen();
     if(pc != (state->pc << shift >> shift)){
         failure(context, hartId, "PC MISSMATCH dut=%lx ref=%lx\n", pc, state->pc);
@@ -571,6 +572,11 @@ void Hart::commit(u64 pc){
     //Checks
 //        printf("%016lx %08lx\n", pc, state->last_inst.bits());
     assertTrue(context, hartId, "DUT missed a trap", !state->trap_happened);
+    const u64 refInst = state->last_inst.bits();
+    if (inst != refInst) {
+        failure(context, hartId, std::format("INSTRUCTION MISMATCH hart={} pc=0x{:016x} DUT=0x{:08x} SPIKE=0x{:08x}",
+                                             hartId, pc, inst, refInst));
+    }
     for (auto item : state->log_reg_write) {
         if (item.first == 0)
           continue;

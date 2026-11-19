@@ -38,7 +38,7 @@ trait TraceBackend{
   }
 
   def newCpuMemoryView(viewId : Int, readIds : Long, writeIds : Long)
-  def newCpu(hartId : Int, isa : String, priv : String, physWidth : Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, memoryViewId : Int) : Unit
+  def newCpu(hartId : Int, isa : String, priv : String, physWidth : Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, vmidWidth : Int, memoryViewId : Int) : Unit
   def loadElf(offset : Long, path : File) : Unit
   def loadBin(offset: Long, path: File): Unit
   def loadBytes(offset: Long, bytes: Array[Byte]): Unit
@@ -74,7 +74,7 @@ trait TraceBackend{
 
 class DummyBackend() extends TraceBackend{
   override def newCpuMemoryView(viewId: Int, readIds: Long, writeIds: Long) = {}
-  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, memoryViewId: Int) = {}
+  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, vmidWidth: Int, memoryViewId: Int) = {}
   override def loadElf(offset: Long, path: File) = {}
   override def loadBin(offset: Long, path: File) = {}
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = {}
@@ -160,8 +160,8 @@ class FileBackend(f : File) extends TraceBackend{
     log(f"memview new $memoryViewId $readIds $writeIds\n")
   }
 
-  override def newCpu(hartId: Int, isa : String, priv : String, physWidth : Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, memoryViewId : Int) = {
-    log(f"rv new $hartId $isa $priv $physWidth $pmpNum $triggerCount $asidWidth $memoryViewId\n")
+  override def newCpu(hartId: Int, isa : String, priv : String, physWidth : Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, vmidWidth : Int, memoryViewId : Int) = {
+    log(f"rv new $hartId $isa $priv $physWidth $pmpNum $triggerCount $asidWidth $vmidWidth $memoryViewId\n")
   }
 
   override def loadExecute(hartId: Int, id : Long, addr : Long, len : Long, data : Array[Byte]) : Unit = {
@@ -211,7 +211,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   }
 
   override def newCpuMemoryView(viewId: Int, readIds: Long, writeIds: Long): Unit = Frontend.newCpuMemoryView(handle, viewId, readIds, writeIds)
-  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, memoryViewId: Int): Unit = Frontend.newCpu(handle, hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, memoryViewId)
+  override def newCpu(hartId: Int, isa: String, priv: String, physWidth: Int, pmpNum : Int, triggerCount : Int, asidWidth : Int, vmidWidth : Int, memoryViewId: Int): Unit = Frontend.newCpu(handle, hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, vmidWidth, memoryViewId)
   override def loadElf(offset: Long, path: File): Unit = Frontend.loadElf(handle, offset, path.getAbsolutePath)
   override def loadBin(offset: Long, path: File): Unit = Frontend.loadBin(handle, offset, path.getAbsolutePath)
   override def loadBytes(offset: Long, bytes: Array[Byte]): Unit = Frontend.loadBytes(handle, offset, bytes)
@@ -219,7 +219,7 @@ class RvlsBackend(workspace : File = new File(".")) extends TraceBackend{
   override def setRegister(hartId : Int, id : Int, value : Long): Unit = Frontend.setRegister(handle, hartId, id, value)
   override def writeRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]): Unit = Frontend.writeRf(handle, hardId, rfKind, address, data)
   override def readRf(hardId: Int, rfKind: Int, address: Int, data: Array[Byte]): Unit = Frontend.readRf(handle, hardId, rfKind, address, data)
-  override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc)) {
+  override def commit(hartId: Int, pc: Long, instruction: Long): Unit = if(!Frontend.commit(handle, hartId, pc, instruction)) {
     throw new Exception(Frontend.getLastErrorMessage(handle))
   }
   override def trap(hartId: Int, interrupt: Boolean, code: Int): Unit = if(!Frontend.trap(handle, hartId, interrupt, code)) {

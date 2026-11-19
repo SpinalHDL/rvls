@@ -21,11 +21,11 @@ void Context::cpuMemoryViewNew(u32 id, u64 readIds, u64 writeIds){
     cpuMemoryViews.try_emplace(id, *this, memory, readIds, writeIds);
 }
 
-void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 viewId, FILE *logs){
+void Context::rvNew(u32 hartId, std::string isa, std::string priv, u32 physWidth, u32 pmpNum, u32 triggerCount, u32 asidWidth, u32 vmidWidth, u32 viewId, FILE *logs){
     auto viewIter = cpuMemoryViews.find(viewId);
     auto& view = viewIter->second;
     view.bindHartId(hartId);
-    auto [iter, inserted] = harts.try_emplace(hartId, *this, hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, &view, logs);
+    auto [iter, inserted] = harts.try_emplace(hartId, *this, hartId, isa, priv, physWidth, pmpNum, triggerCount, asidWidth, vmidWidth, &view, logs);
     if (!inserted) return;
     auto &hart = iter->second;
     if(config.spikeDebug) hart.proc->debug = true;
